@@ -57,7 +57,7 @@ LPDIRECTINPUTDEVICE8 g_pJoystick        = NULL;
 bool g_bWriting = false;
 HINSTANCE g_hInst;
 FILE * fp = NULL;
-LARGE_INTEGER g_timerstart, g_timerfreq;
+LARGE_INTEGER g_timerstart, g_timerfreq, g_timertest;
 char g_MsgText[512];
 
 // The two buttons we monitor
@@ -709,7 +709,7 @@ INT_PTR CALLBACK MainDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam 
 			break;
 
 		case MM_JOY1BUTTONDOWN :               // button is down 
-			// Note that this only picks up buttons 1--4, so we poll using OnjoystickBotton below.
+			// Note that this only picks up buttons 1--4, so we poll using OnjoystickButton below.
 			if( (UINT)wParam & JOY_BUTTON2CHG) {
 
 					// Toggle whether we show axis details
@@ -728,7 +728,7 @@ INT_PTR CALLBACK MainDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam 
             break;
 
         case WM_TIMER:
-			// Deal with time 1 only
+			// Timer #1 controls writes to the file
 			if ( wParam == 1 && g_bWriting && !WriteToFile() )
 			{
                 KillTimer( hDlg, 1 );    
@@ -737,6 +737,22 @@ INT_PTR CALLBACK MainDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam 
                             MB_ICONERROR | MB_OK );
                 EndDialog( hDlg, TRUE ); 
             }
+
+			// Timer test is timer #69
+			if ( wParam == 69 ) {
+				KillTimer( hDlg, 69 );
+				LARGE_INTEGER timernow;
+				if ( QueryPerformanceCounter( &timernow ) ) {
+					float elapsed = (float)(timernow.QuadPart - g_timertest.QuadPart) / g_timerfreq.QuadPart;
+					_snprintf(g_MsgText, sizeof g_MsgText, "Ten second test timer apparently ran for %6.3f seconds.", elapsed);
+					if ( elapsed < 9.9 || elapsed > 10.1 ) {
+						strcat(g_MsgText, " Your results could be bogus! Please report this problem.");
+						fprintf(fp, "# 10 second timer test: start %lli, end %lli, frequency %lli, elapsed %6.3f\n",
+							g_timertest.QuadPart, timernow.QuadPart, g_timerfreq.QuadPart, elapsed);
+					}
+				}
+				g_timertest.QuadPart = 0;
+			}
 
 			UpdateInputState( hDlg );
 			break; 
@@ -864,17 +880,26 @@ void CheckJoystickButton( HWND hDlg )
 					    MB_ICONERROR | MB_OK );
 					EndDialog( hDlg, TRUE ); 
 				}
+				g_timertest.QuadPart = 0;
 
-			} else if ( g_bWriting && timenow - started > 2 && timenow - lastclick <= 1 ) {
-				// two clicks in a second means we stop writing, but must write for a couple of secs.
-				KillTimer( hDlg, 0 );    
-				StopWriting();
-				MessageBeep(MB_OK);
-				EnableWindow( GetDlgItem( hDlg, ID_EDIT_CONFIG ), TRUE );
-				ShowWindow( GetDlgItem( hDlg, ID_EDIT_CONFIG ), SW_SHOW );
-				EnableWindow( GetDlgItem( hDlg, IDCANCEL ), TRUE );
-				ShowWindow( GetDlgItem( hDlg, IDCANCEL ), SW_SHOW );
-				_snprintf( g_MsgText, sizeof g_MsgText, "Click button %u to start", g_Config.JoystickButton );
+			} else if ( g_bWriting && timenow - started > 2 ) {
+				if ( timenow - lastclick <= 1 ) {
+					// two clicks in a second means we stop writing, but must write for a couple of secs.
+					KillTimer( hDlg, 1 );
+					if ( g_timertest.QuadPart )
+						KillTimer( hDlg, 69 );
+					StopWriting();
+					MessageBeep(MB_OK);
+					EnableWindow( GetDlgItem( hDlg, ID_EDIT_CONFIG ), TRUE );
+					ShowWindow( GetDlgItem( hDlg, ID_EDIT_CONFIG ), SW_SHOW );
+					EnableWindow( GetDlgItem( hDlg, IDCANCEL ), TRUE );
+					ShowWindow( GetDlgItem( hDlg, IDCANCEL ), SW_SHOW );
+					_snprintf( g_MsgText, sizeof g_MsgText, "Click button %u to start", g_Config.JoystickButton );
+				} else if ( g_timertest.QuadPart == 0 ) {
+					// start a secret 10 second timer test
+					QueryPerformanceCounter( &g_timertest );
+					SetTimer( hDlg, 69, 10000, NULL);
+				}
 			}
 
 			lastclick = timenow;
