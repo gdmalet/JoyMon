@@ -1,27 +1,26 @@
-Microsoft Visual Studio Solution File, Format Version 7.00
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Joystick", "joystick.vcproj", "{43E20DBD-F46C-467E-A2D0-73B3708C4B72}"
+﻿
+Microsoft Visual Studio Solution File, Format Version 9.00
+# Visual Studio 2005
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Joystick", "joystick.vcproj", "{E6434050-668B-42F1-BA9A-4B51906E0142}"
 EndProject
 Global
-	GlobalSection(SolutionConfiguration) = preSolution
-		ConfigName.0 = Debug
-		ConfigName.1 = Debug Unicode
-		ConfigName.2 = Release
-		ConfigName.3 = Release Unicode
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug Unicode|Win32 = Debug Unicode|Win32
+		Debug|Win32 = Debug|Win32
+		Release Unicode|Win32 = Release Unicode|Win32
+		Release|Win32 = Release|Win32
 	EndGlobalSection
-	GlobalSection(ProjectDependencies) = postSolution
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E6434050-668B-42F1-BA9A-4B51906E0142}.Debug Unicode|Win32.ActiveCfg = Debug Unicode|Win32
+		{E6434050-668B-42F1-BA9A-4B51906E0142}.Debug Unicode|Win32.Build.0 = Debug Unicode|Win32
+		{E6434050-668B-42F1-BA9A-4B51906E0142}.Debug|Win32.ActiveCfg = Debug|Win32
+		{E6434050-668B-42F1-BA9A-4B51906E0142}.Debug|Win32.Build.0 = Debug|Win32
+		{E6434050-668B-42F1-BA9A-4B51906E0142}.Release Unicode|Win32.ActiveCfg = Release Unicode|Win32
+		{E6434050-668B-42F1-BA9A-4B51906E0142}.Release Unicode|Win32.Build.0 = Release Unicode|Win32
+		{E6434050-668B-42F1-BA9A-4B51906E0142}.Release|Win32.ActiveCfg = Release|Win32
+		{E6434050-668B-42F1-BA9A-4B51906E0142}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
-	GlobalSection(ProjectConfiguration) = postSolution
-		{43E20DBD-F46C-467E-A2D0-73B3708C4B72}.Debug.ActiveCfg = Debug|Win32
-		{43E20DBD-F46C-467E-A2D0-73B3708C4B72}.Debug.Build.0 = Debug|Win32
-		{43E20DBD-F46C-467E-A2D0-73B3708C4B72}.Debug Unicode.ActiveCfg = Debug Unicode|Win32
-		{43E20DBD-F46C-467E-A2D0-73B3708C4B72}.Debug Unicode.Build.0 = Debug Unicode|Win32
-		{43E20DBD-F46C-467E-A2D0-73B3708C4B72}.Release.ActiveCfg = Release|Win32
-		{43E20DBD-F46C-467E-A2D0-73B3708C4B72}.Release.Build.0 = Release|Win32
-		{43E20DBD-F46C-467E-A2D0-73B3708C4B72}.Release Unicode.ActiveCfg = Release Unicode|Win32
-		{43E20DBD-F46C-467E-A2D0-73B3708C4B72}.Release Unicode.Build.0 = Release Unicode|Win32
-	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-	EndGlobalSection
-	GlobalSection(ExtensibilityAddIns) = postSolution
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal

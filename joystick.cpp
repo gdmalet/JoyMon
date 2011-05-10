@@ -10,6 +10,9 @@
 #define DIRECTINPUT_VERSION 0x0800
 #define _WIN32_WINNT 0x0500
 
+#pragma warning( disable : 4995 ) // disable deprecated warning 
+#pragma warning( disable : 4996 ) // disable deprecated warning 
+
 #include <windows.h>
 #include <windowsx.h>
 #include <commctrl.h>
