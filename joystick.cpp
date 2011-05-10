@@ -951,7 +951,7 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 				GetWindowRect(hDlgParent, &rcParent);
 				if ( rcParent.left < 0 ) rcParent.left = 0;
 				if ( rcParent.right < 0 ) rcParent.right = 0;
-				sprintf(buf, "Origin X %u,  Y %u;  size %u x %u", rcParent.left, rcParent.top,
+				sprintf(buf, "Positionn X %u,  Y %u;  Size %u x %u", rcParent.left, rcParent.top,
 					rcParent.right - rcParent.left, rcParent.bottom - rcParent.top );
 				SetWindowText( GetDlgItem( hDlg, IDC_WINDOW_POSN ), buf );
 

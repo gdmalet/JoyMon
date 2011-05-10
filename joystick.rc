@@ -71,7 +71,7 @@ BEGIN
     DEFPUSHBUTTON   "&Save",IDC_CONFIG_OK,155,259,50,14
     PUSHBUTTON      "&Cancel",IDC_CONFIG_CANCEL,103,259,50,14
     PUSHBUTTON      "&About",IDC_CONFIG_ABOUT,6,259,50,14
-    LTEXT           "How many samples to write per second",IDC_STATIC,12,96,138,12
+    LTEXT           "How many samples to write per second",IDC_STATIC,6,96,138,12
     LTEXT           "Output file name (3 digits will be appended)",IDC_STATIC,12,12,144,12
     LTEXT           "X and Y axis magnitude",IDC_STATIC,12,120,90,12
     LTEXT           "Pointer radius (% of window size)",IDC_STATIC,12,132,114,12
@@ -80,8 +80,8 @@ BEGIN
     LTEXT           "Static",IDC_WINDOW_POSN,30,210,150,8
     LTEXT           "Which joystick button starts/stops writing",IDC_STATIC,12,108,139,8
     LTEXT           "Label for axis  -X:",IDC_STATIC,11,146,66,12
-    LTEXT           "X:",IDC_STATIC,142,147,8,8
-    LTEXT           "Y:",IDC_STATIC,142,159,8,8
+    LTEXT           "X:",IDC_STATIC,19,147,8,8
+    LTEXT           "Y:",IDC_STATIC,19,159,8,8
     LTEXT           "Report status of which button (zero for none)",IDC_STATIC,12,174,148,8
     LTEXT           "-Y:",IDC_STATIC,57,159,11,8
 END
@@ -110,7 +110,7 @@ BEGIN
     BEGIN
         LEFTMARGIN, 6
         RIGHTMARGIN, 205
-        VERTGUIDE, 150
+        VERTGUIDE, 27
         VERTGUIDE, 198
         BOTTOMMARGIN, 269
         HORZGUIDE, 231
