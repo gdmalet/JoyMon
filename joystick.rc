@@ -42,48 +42,48 @@ END
 
 IDD_CONFIG DIALOGEX 0, 0, 212, 278
 STYLE DS_SETFONT | DS_MODALFRAME | DS_NOIDLEMSG | DS_FIXEDSYS | WS_POPUP | WS_VISIBLE | WS_CAPTION
-CAPTION "Joystick Monitor -- Configure"
+CAPTION "Joystick Monitor -- Configuration"
 FONT 8, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
-    PUSHBUTTON      "&About",IDC_CONFIG_ABOUT,7,259,50,14
-    PUSHBUTTON      "&Cancel",IDC_CONFIG_CANCEL,103,259,50,14
-    CONTROL         "Remember main window geometry?",IDC_REMEMBER_WINDOW,
-                    "Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | BS_NOTIFY | WS_TABSTOP,12,12,186,10
-    EDITTEXT        IDC_FILENAME,12,54,186,12,ES_AUTOHSCROLL,WS_EX_ACCEPTFILES
-    CONTROL         "Show file name in status line                       ",IDC_SHOW_NAME,
-                    "Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | WS_TABSTOP,12,72,186,10
+    EDITTEXT        IDC_FILENAME,12,24,186,12,ES_AUTOHSCROLL,WS_EX_ACCEPTFILES
     CONTROL         "Write a banner at start of file                      ",IDC_WRITE_BANNER,
-                    "Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | WS_TABSTOP,12,84,186,10
+                    "Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | WS_TABSTOP,12,54,186,10
+    EDITTEXT        IDC_BANNER_COMMENT,12,78,186,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_SAMPLES_PER_SEC,174,96,24,12,ES_RIGHT | ES_AUTOHSCROLL,WS_EX_RIGHT
+    EDITTEXT        IDC_JOYSTICK_BUTTON,174,108,24,12,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_XYMINMAX,174,120,24,12,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER,WS_EX_RIGHT
+    EDITTEXT        IDC_POINTER_SIZE,174,132,24,12,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER,WS_EX_RIGHT
+    EDITTEXT        IDC_LABEL_NEGX,77,146,42,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_LABEL_POSX,155,146,42,12,ES_AUTOHSCROLL,WS_EX_RIGHT
+    EDITTEXT        IDC_LABEL_NEGY,77,158,42,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_LABEL_POSY,155,158,42,12,ES_AUTOHSCROLL,WS_EX_RIGHT
+    EDITTEXT        IDC_BUTTON2,174,172,24,12,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER,WS_EX_RIGHT
+    CONTROL         "Provide sound when status button pressed",IDC_SOUND_FEEDBACK,
+                    "Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | WS_TABSTOP,30,186,168,10
+    CONTROL         "Show file name in status line                       ",IDC_SHOW_NAME,
+                    "Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | WS_TABSTOP,12,42,186,10
+    CONTROL         "Remember the current main window geometry",IDC_REMEMBER_WINDOW,
+                    "Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | BS_NOTIFY | WS_TABSTOP,12,198,186,10
     CONTROL         "Output only changes to file                          ",IDC_CHANGES_ONLY,
-                    "Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | WS_TABSTOP,12,96,186,10
+                    "Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | WS_TABSTOP,12,222,186,10
     CONTROL         "Show pointer coordinates (button 2 toggles) ",IDC_SHOW_COORDS,
-                    "Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | WS_TABSTOP,12,108,186,10
-    EDITTEXT        IDC_BUTTON2,176,118,24,12,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER,WS_EX_RIGHT
-    CONTROL         "Provide feedback with sound?       ",IDC_SOUND_FEEDBACK,
-                    "Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | WS_TABSTOP,73,132,125,10
-    EDITTEXT        IDC_SAMPLES_PER_SEC,176,144,24,12,ES_RIGHT | ES_AUTOHSCROLL,WS_EX_RIGHT
-    EDITTEXT        IDC_JOYSTICK_BUTTON,176,156,24,12,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
-    EDITTEXT        IDC_XYMINMAX,176,168,24,12,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER,WS_EX_RIGHT
-    EDITTEXT        IDC_POINTER_SIZE,176,180,24,12,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER,WS_EX_RIGHT
-    EDITTEXT        IDC_LABEL_NEGX,80,194,42,12,ES_AUTOHSCROLL
-    EDITTEXT        IDC_LABEL_NEGY,80,206,42,12,ES_AUTOHSCROLL
-    EDITTEXT        IDC_LABEL_POSX,158,194,42,12,ES_AUTOHSCROLL,WS_EX_RIGHT
-    EDITTEXT        IDC_LABEL_POSY,158,206,42,12,ES_AUTOHSCROLL,WS_EX_RIGHT
-    EDITTEXT        IDC_BANNER_COMMENT,14,236,186,12,ES_AUTOHSCROLL
+                    "Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | WS_TABSTOP,12,234,186,10
     DEFPUSHBUTTON   "&Save",IDC_CONFIG_OK,155,259,50,14
-    LTEXT           "How many samples to write per second",IDC_STATIC,14,146,138,12
-    LTEXT           "Output filename (3 digits will be appended)",IDC_STATIC,12,42,144,12
-    LTEXT           "X and Y axis magnitude",IDC_STATIC,14,170,90,12
-    LTEXT           "Pointer radius (% of window size)",IDC_STATIC,14,182,114,12
-    GROUPBOX        "Configuration",IDC_STATIC,7,1,198,253
-    LTEXT           "Comment for file banner",IDC_STATIC,14,224,81,8
-    LTEXT           "Static",IDC_WINDOW_POSN,24,24,162,8
-    LTEXT           "Which joystick button starts/stops writing?",IDC_STATIC,14,158,139,8
-    LTEXT           "Label for axis  -X:",IDC_STATIC,14,194,66,12
-    LTEXT           "X:",IDC_STATIC,146,194,8,8
-    LTEXT           "Y:",IDC_STATIC,146,206,8,8
-    LTEXT           "Report status of which button (zero for none)",IDC_STATIC,12,120,148,8
-    LTEXT           "-Y:",IDC_STATIC,60,208,11,8
+    PUSHBUTTON      "&Cancel",IDC_CONFIG_CANCEL,103,259,50,14
+    PUSHBUTTON      "&About",IDC_CONFIG_ABOUT,6,259,50,14
+    LTEXT           "How many samples to write per second",IDC_STATIC,12,96,138,12
+    LTEXT           "Output file name (3 digits will be appended)",IDC_STATIC,12,12,144,12
+    LTEXT           "X and Y axis magnitude",IDC_STATIC,12,120,90,12
+    LTEXT           "Pointer radius (% of window size)",IDC_STATIC,12,132,114,12
+    GROUPBOX        "Configuration",IDC_STATIC,6,1,199,253
+    LTEXT           "Comment for file banner",IDC_STATIC,12,66,81,8
+    LTEXT           "Static",IDC_WINDOW_POSN,30,210,150,8
+    LTEXT           "Which joystick button starts/stops writing",IDC_STATIC,12,108,139,8
+    LTEXT           "Label for axis  -X:",IDC_STATIC,11,146,66,12
+    LTEXT           "X:",IDC_STATIC,142,147,8,8
+    LTEXT           "Y:",IDC_STATIC,142,159,8,8
+    LTEXT           "Report status of which button (zero for none)",IDC_STATIC,12,174,148,8
+    LTEXT           "-Y:",IDC_STATIC,57,159,11,8
 END
 
 
@@ -108,8 +108,10 @@ BEGIN
 
     IDD_CONFIG, DIALOG
     BEGIN
-        LEFTMARGIN, 7
+        LEFTMARGIN, 6
         RIGHTMARGIN, 205
+        VERTGUIDE, 150
+        VERTGUIDE, 198
         BOTTOMMARGIN, 269
         HORZGUIDE, 231
     END
