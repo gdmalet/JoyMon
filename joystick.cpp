@@ -71,7 +71,7 @@ static struct {
 	long EllipseSize, XYMinMax, JoystickButton, Button2, WPosnX, WPosnY, WSizeX, WSizeY;
 	double TicksPerSec;
 	char FilePattern[MAX_PATH];	// Where to put output data. Will add 3 digit extension.
-	char BannerComment[1024], LabelPosX[128], LabelPosY[128], LabelNegX[128], LabelNegY[128];
+	char BannerComment[512], LabelPosX[128], LabelPosY[128], LabelNegX[128], LabelNegY[128];
 } g_Config;
 
 //-----------------------------------------------------------------------------
@@ -106,27 +106,20 @@ bool LoadConfig( void )
 	g_Config.ShowFilename = true;
 	g_Config.OutputFileBanner = true;
 	g_Config.OutputOnlyChanges = false;
-	g_Config.RememberWindow = true;
-	g_Config.EllipseSize = 2;
+	g_Config.RememberWindow = false;
+	g_Config.EllipseSize = 3;
 	g_Config.XYMinMax = 1000;
-	g_Config.TicksPerSec = 2.0;
+	g_Config.TicksPerSec = 5.0;
 	g_Config.JoystickButton = 7;
-	g_Config.Button2 = 1;
+	g_Config.Button2 = 0;
 	g_Config.SoundFeedback = true;
-	g_Config.WPosnX = 0;
-	g_Config.WPosnY = 0;
-	g_Config.WSizeX = 273;
-	g_Config.WSizeY = 329;
-	strncpy(g_Config.FilePattern, "c:\\Study 1\\Male41.", sizeof g_Config.FilePattern);
-	strncpy(g_Config.BannerComment, "time,x-axis,y-axis,report status set to firing button 1 "
-		"(when pressed writes 1 to file; otherwise writes 0); "
-		"Double-click button 7 to stop; Adds increment on end of file to prevent inadvertent overwriting of file; "
-		"To view file contents change extension to .csv or .txt and open into Excel or text editor.",
-		sizeof g_Config.BannerComment);
-	strncpy(g_Config.LabelPosX, "Friendly", sizeof g_Config.LabelPosX);
-	strncpy(g_Config.LabelNegX, "Unfriendly", sizeof g_Config.LabelNegX);
-	strncpy(g_Config.LabelPosY, "Dominant", sizeof g_Config.LabelPosY);
-	strncpy(g_Config.LabelNegY, "Submissive", sizeof g_Config.LabelNegY);
+	g_Config.WPosnX = 664;
+	g_Config.WPosnY = 459;
+	g_Config.WSizeX = 271;
+	g_Config.WSizeY = 282;
+	strncpy(g_Config.FilePattern, "c:\\tmp\\joydata.", sizeof g_Config.FilePattern);
+	g_Config.BannerComment[0] = 0;
+	g_Config.LabelPosX[0] = g_Config.LabelNegX[0] = g_Config.LabelPosY[0] = g_Config.LabelNegY[0] = 0;
 
 	if ( (lResult = RegCreateKeyEx(
 			HKEY_LOCAL_MACHINE,
@@ -844,37 +837,30 @@ void CheckJoystickButton( HWND hDlg )
 				started = timenow;
 
 				if ( !StartWriting() ) {
-					char errbuf[512];
-					char errstart[] = "Error creating output file `";
-					strcpy(errbuf, errstart);
-					strncat(errbuf, g_Config.FilePattern, sizeof errbuf/sizeof errbuf[0] - strlen(errbuf) - 16);
-					strcat(errbuf, "000': ");
-					size_t errstartlen = strlen(errbuf);
-					strerror_s(&errbuf[errstartlen], sizeof errbuf - errstartlen, errno);
-					MessageBox( NULL, errbuf, TEXT("Joystick Monitor"), MB_ICONERROR | MB_OK );
-//					EndDialog( hDlg, TRUE ); 
-
-				} else {
-
-					if ( !g_Config.ShowFilename )
-						g_MsgText[0] = 0;
-
-					// Disable buttons while writing.
-				    EnableWindow( GetDlgItem( hDlg, ID_EDIT_CONFIG ), FALSE );
-					ShowWindow( GetDlgItem( hDlg, ID_EDIT_CONFIG ), SW_HIDE );
-				    EnableWindow( GetDlgItem( hDlg, IDCANCEL ), FALSE );
-					ShowWindow( GetDlgItem( hDlg, IDCANCEL ), SW_HIDE );
-
-					// Make a noise
-					MessageBeep(MB_ICONASTERISK); 
-
-					// Set a timer to go off n times a second. At every timer message
-					// the input device will be read and written to file.
-					SetTimer( hDlg, 1, (unsigned int)(1000.0 / g_Config.TicksPerSec), NULL );
-
-					//timeBeginPeriod(1); // supposedly makes for better granularity in GetTickCount()
-					g_timerstart = GetTickCount();
+					MessageBox( NULL, TEXT("Can't Create Output File. ") \
+		                TEXT("The monitor will now exit."), TEXT("Joystick Monitor"), 
+		             MB_ICONERROR | MB_OK );
+					EndDialog( hDlg, TRUE ); 
 				}
+
+				if ( !g_Config.ShowFilename )
+					g_MsgText[0] = 0;
+
+				// Disable buttons while writing.
+			    EnableWindow( GetDlgItem( hDlg, ID_EDIT_CONFIG ), FALSE );
+				ShowWindow( GetDlgItem( hDlg, ID_EDIT_CONFIG ), SW_HIDE );
+			    EnableWindow( GetDlgItem( hDlg, IDCANCEL ), FALSE );
+				ShowWindow( GetDlgItem( hDlg, IDCANCEL ), SW_HIDE );
+
+				// Make a noise
+				MessageBeep(MB_ICONASTERISK); 
+
+				// Set a timer to go off n times a second. At every timer message
+				// the input device will be read and written to file.
+			    SetTimer( hDlg, 1, (unsigned int)(1000.0 / g_Config.TicksPerSec), NULL );
+
+				//timeBeginPeriod(1); // supposedly makes for better granularity in GetTickCount()
+				g_timerstart = GetTickCount();
 
 			} else if ( g_bWriting && timenow - started > 2 ) {
 				if ( timenow - lastclick <= 1 ) {
@@ -951,7 +937,7 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 				GetWindowRect(hDlgParent, &rcParent);
 				if ( rcParent.left < 0 ) rcParent.left = 0;
 				if ( rcParent.right < 0 ) rcParent.right = 0;
-				sprintf(buf, "Positionn X %u,  Y %u;  Size %u x %u", rcParent.left, rcParent.top,
+				sprintf(buf, "X %u,  Y %u,  size %u x %u", rcParent.left, rcParent.top,
 					rcParent.right - rcParent.left, rcParent.bottom - rcParent.top );
 				SetWindowText( GetDlgItem( hDlg, IDC_WINDOW_POSN ), buf );
 
