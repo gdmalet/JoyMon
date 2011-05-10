@@ -1,0 +1,249 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// RT_MANIFEST
+//
+
+1                       RT_MANIFEST             "joystick.manifest"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_JOYST_IMM DIALOGEX 0, 0, 150, 121
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU | 
+    WS_THICKFRAME
+EXSTYLE WS_EX_APPWINDOW
+CAPTION "Joystick Monitor"
+FONT 8, "MS Shell Dlg", 0, 0, 0x0
+BEGIN
+    LTEXT           "",IDC_X_AXIS,6,6,34,8,NOT WS_VISIBLE,WS_EX_TRANSPARENT
+    LTEXT           "",IDC_Y_AXIS,6,18,34,8,NOT WS_VISIBLE,WS_EX_TRANSPARENT
+    CONTROL         "",IDC_CROSSHAIR,"Static",SS_WHITERECT | SS_RIGHTJUST,1,
+                    1,149,93,WS_EX_TRANSPARENT
+    LTEXT           "",IDC_MSGS,3,112,138,8,SS_PATHELLIPSIS
+    DEFPUSHBUTTON   "E&xit",IDCANCEL,96,96,51,14
+    PUSHBUTTON      "&Configure",ID_EDIT_CONFIG,3,96,50,14
+END
+
+IDD_CONFIG DIALOGEX 0, 0, 211, 247
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_POPUP | WS_VISIBLE | WS_CAPTION
+EXSTYLE WS_EX_NOPARENTNOTIFY
+CAPTION "Joystick Monitor Configuration"
+FONT 8, "MS Shell Dlg", 0, 0, 0x0
+BEGIN
+    CONTROL         "Remember main window geometry?",IDC_REMEMBER_WINDOW,
+                    "Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | WS_TABSTOP,12,
+                    12,186,10
+    EDITTEXT        IDC_FILENAME,12,54,186,12,ES_AUTOHSCROLL,
+                    WS_EX_ACCEPTFILES
+    CONTROL         "Show file name in status line                       ",
+                    IDC_SHOW_NAME,"Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | 
+                    WS_TABSTOP,12,72,186,10
+    CONTROL         "Write a banner at start of file                      ",
+                    IDC_WRITE_BANNER,"Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | 
+                    WS_TABSTOP,12,84,186,10
+    CONTROL         "Output only changes to file                          ",
+                    IDC_CHANGES_ONLY,"Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | 
+                    WS_TABSTOP,12,96,186,10
+    CONTROL         "Show pointer coordinates (button 2 toggles) ",
+                    IDC_SHOW_COORDS,"Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | 
+                    WS_TABSTOP,12,108,186,10
+    EDITTEXT        IDC_SAMPLES_PER_SEC,174,120,24,12,ES_RIGHT | 
+                    ES_AUTOHSCROLL | ES_NUMBER,WS_EX_RIGHT
+    EDITTEXT        IDC_JOYSTICK_BUTTON,174,132,24,12,ES_RIGHT | 
+                    ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_XYMINMAX,174,144,24,12,ES_RIGHT | ES_AUTOHSCROLL | 
+                    ES_NUMBER,WS_EX_RIGHT
+    EDITTEXT        IDC_POINTER_SIZE,174,156,24,12,ES_RIGHT | ES_AUTOHSCROLL | 
+                    ES_NUMBER,WS_EX_RIGHT
+    EDITTEXT        IDC_LABEL_NEGX,78,168,40,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_LABEL_POSX,158,169,40,12,ES_AUTOHSCROLL,WS_EX_RIGHT
+    EDITTEXT        IDC_LABEL_NEGY,78,180,40,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_LABEL_POSY,158,179,40,12,ES_AUTOHSCROLL,WS_EX_RIGHT
+    EDITTEXT        IDC_BANNER_COMMENT,12,204,186,12,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "&Save",IDC_CONFIG_OK,154,228,50,14
+    PUSHBUTTON      "&Cancel",IDC_CONFIG_CANCEL,102,228,50,14
+    PUSHBUTTON      "&About",IDC_CONFIG_ABOUT,7,228,50,14
+    LTEXT           "How many samples to write per second",IDC_STATIC,12,120,
+                    138,12
+    LTEXT           "Output filename (3 digits will be appended)",IDC_STATIC,
+                    12,42,144,12
+    LTEXT           "X and Y axis magnitude",IDC_STATIC,12,144,90,12
+    LTEXT           "Pointer radius (% of window size)",IDC_STATIC,12,156,
+                    114,12
+    GROUPBOX        "Configuration",IDC_STATIC,5,0,198,222
+    LTEXT           "Comment for file banner",IDC_STATIC,12,192,81,8
+    LTEXT           "Static",IDC_WINDOW_POSN,24,24,162,8
+    LTEXT           "Which joystick button starts/stops writing?",IDC_STATIC,
+                    12,132,139,8
+    LTEXT           "Label for axis  -X:",IDC_STATIC,12,168,66,12
+    LTEXT           "X:",IDC_STATIC,144,168,8,8
+    LTEXT           "Y:",IDC_STATIC,144,180,8,8
+    LTEXT           "-Y:",IDC_STATIC,60,180,11,8
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO 
+BEGIN
+    IDD_JOYST_IMM, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 143
+        VERTGUIDE, 15
+        TOPMARGIN, 18
+        BOTTOMMARGIN, 116
+        HORZGUIDE, 7
+        HORZGUIDE, 118
+    END
+
+    IDD_CONFIG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 204
+        VERTGUIDE, 198
+        BOTTOMMARGIN, 242
+        HORZGUIDE, 228
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_MAIN                ICON                    "..\\..\\Common\\directx.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+IDR_ACCELERATOR1 ACCELERATORS 
+BEGIN
+    "X",            IDCANCEL,               VIRTKEY, ALT, NOINVERT
+END
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// English (Canada) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENC)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_CAN
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ABOUT DIALOGEX 0, 0, 187, 83
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_VISIBLE | 
+    WS_CAPTION
+CAPTION "Joystick Monitor"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,130,62,50,14
+    LTEXT           "Adapted from the Direct X 9.1 Samples by\n           gdmalet@shrdlu.kw.net.",
+                    IDC_STATIC,18,12,145,25
+    LTEXT           "Version",IDC_VERSION,18,42,151,14
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO 
+BEGIN
+    IDD_ABOUT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 180
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 76
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+#endif    // English (Canada) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

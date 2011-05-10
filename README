@@ -1,2 +1,5 @@
 This program monitors an attached joystick, and displays various
 parameters, as well as logging to a file.
+
+Original source came from the MS DirectX samples:
+Source:     DXSDK\Samples\C++\DirectInput\Joystick
