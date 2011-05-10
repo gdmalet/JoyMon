@@ -12,7 +12,6 @@ Global
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{E6434050-668B-42F1-BA9A-4B51906E0142}.Debug Unicode|Win32.ActiveCfg = Debug Unicode|Win32
-		{E6434050-668B-42F1-BA9A-4B51906E0142}.Debug Unicode|Win32.Build.0 = Debug Unicode|Win32
 		{E6434050-668B-42F1-BA9A-4B51906E0142}.Debug|Win32.ActiveCfg = Debug|Win32
 		{E6434050-668B-42F1-BA9A-4B51906E0142}.Debug|Win32.Build.0 = Debug|Win32
 		{E6434050-668B-42F1-BA9A-4B51906E0142}.Release Unicode|Win32.ActiveCfg = Release Unicode|Win32

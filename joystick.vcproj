@@ -72,10 +72,12 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/IGNORE:4089 /IGNORE:4078 "
-				AdditionalDependencies="dxguid.lib dxerr9.lib dinput8.lib comctl32.lib"
+				AdditionalDependencies="dxguid.lib dxerr9.lib dinput8.lib comctl32.lib winmm.lib"
+				ShowProgress="1"
 				OutputFile=".\Debug/joystick.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
+				TypeLibraryResourceID="2"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\Debug/joystick.pdb"
 				SubSystem="2"
@@ -88,6 +90,7 @@
 			/>
 			<Tool
 				Name="VCManifestTool"
+				VerboseOutput="true"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -266,7 +269,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/IGNORE:4089 /IGNORE:4078 "
-				AdditionalDependencies="dxguid.lib dxerr9.lib dinput8.lib comctl32.lib"
+				AdditionalDependencies="dxguid.lib dxerr9.lib dinput8.lib comctl32.lib  winmm.lib"
 				OutputFile=".\Release/joystick.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"

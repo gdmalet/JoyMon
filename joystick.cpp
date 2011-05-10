@@ -38,7 +38,7 @@ HRESULT UpdateInputState( HWND hDlg );
 VOID    OnPaint( HWND hDlg );
 HRESULT PollJoystick( DIJOYSTATE& js );
 BOOL	CALLBACK EnumChildProc(HWND hwndChild, LPARAM lParam);
-void	OnJoystickButton( HWND hDlg );
+void	CheckJoystickButton( HWND hDlg );
 bool	StartWriting( void );
 bool	WriteToFile( void );
 void	StopWriting( void );
@@ -60,11 +60,15 @@ FILE * fp = NULL;
 LARGE_INTEGER g_timerstart, g_timerfreq;
 char g_MsgText[512];
 
+// The two buttons we monitor
+static bool g_JoystickButton = false, g_Button2 = false;
+
 static const char g_Version[] = "Version: " __DATE__ ", "  __TIME__;
 
 static struct {
-	bool ShowAxes, ShowFilename, OutputFileBanner, OutputOnlyChanges, RememberWindow;
-	long EllipseSize, XYMinMax, TicksPerSec, JoystickButton, WPosnX, WPosnY, WSizeX, WSizeY;
+	bool ShowAxes, ShowFilename, OutputFileBanner, OutputOnlyChanges, RememberWindow, SoundFeedback;
+	long EllipseSize, XYMinMax, JoystickButton, Button2, WPosnX, WPosnY, WSizeX, WSizeY;
+	double TicksPerSec;
 	char FilePattern[MAX_PATH];	// Where to put output data. Will add 3 digit extension.
 	char BannerComment[512], LabelPosX[128], LabelPosY[128], LabelNegX[128], LabelNegY[128];
 } g_Config;
@@ -104,8 +108,10 @@ bool LoadConfig( void )
 	g_Config.RememberWindow = false;
 	g_Config.EllipseSize = 3;
 	g_Config.XYMinMax = 1000;
-	g_Config.TicksPerSec = 5;
+	g_Config.TicksPerSec = 5.0;
 	g_Config.JoystickButton = 7;
+	g_Config.Button2 = 0;
+	g_Config.SoundFeedback = true;
 	g_Config.WPosnX = 664;
 	g_Config.WPosnY = 459;
 	g_Config.WSizeX = 271;
@@ -211,8 +217,14 @@ bool LoadConfig( void )
 		&dwType,
 		regvalue,
 		&reglen)) == 0 ) {
-			g_Config.TicksPerSec = *((unsigned long*)regvalue);
+				// Convert old `long' format to new `float'. It's actually stored
+				// as a double now so we can distinguish on type.
+			if (dwType != REG_QWORD)
+				g_Config.TicksPerSec = (double)*((unsigned long*)regvalue);
+			else
+				g_Config.TicksPerSec = *((double*)regvalue);
 	}
+
 
 	reglen = sizeof regvalue;
 	if ( (lResult = RegQueryValueEx(
@@ -226,6 +238,31 @@ bool LoadConfig( void )
 			DIJOYSTATE js;
 			if ( g_Config.JoystickButton < 1 || g_Config.JoystickButton > sizeof js.rgbButtons / sizeof js.rgbButtons[0] )
 				g_Config.JoystickButton = 7;
+	}
+
+	reglen = sizeof regvalue;
+	if ( (lResult = RegQueryValueEx(
+		hRegKey,
+		"Button2",
+		0,
+		&dwType,
+		regvalue,
+		&reglen)) == 0 ) {
+			g_Config.Button2 = *((unsigned long*)regvalue);
+			DIJOYSTATE js;
+			if ( g_Config.JoystickButton < 1 || g_Config.JoystickButton > sizeof js.rgbButtons / sizeof js.rgbButtons[0] )
+				g_Config.JoystickButton = 0;
+	}
+
+	reglen = sizeof regvalue;
+	if ( (lResult = RegQueryValueEx(
+		hRegKey,
+		"SoundFeedback",
+		0,
+		&dwType,
+		regvalue,
+		&reglen)) == 0 ) {
+			g_Config.SoundFeedback = *((bool*)regvalue);
 	}
 
 	reglen = sizeof regvalue;
@@ -455,7 +492,7 @@ bool SaveConfig( void )
 			hRegKey,
 			"TicksPerSec",
 			0,
-			REG_DWORD,
+			REG_QWORD, // note
 			(unsigned char*)&g_Config.TicksPerSec,
 			sizeof g_Config.TicksPerSec)) != 0 ) {
 				SetLastError( lResult );
@@ -470,6 +507,31 @@ bool SaveConfig( void )
 			REG_DWORD,
 			(unsigned char*)&g_Config.JoystickButton,
 			sizeof g_Config.JoystickButton)) != 0 ) {
+				SetLastError( lResult );
+				RegCloseKey( hRegKey );
+				return false;
+	};
+
+	if ( (lResult = RegSetValueEx(
+			hRegKey,
+			"Button2",
+			0,
+			REG_DWORD,
+			(unsigned char*)&g_Config.Button2,
+			sizeof g_Config.Button2)) != 0 ) {
+				SetLastError( lResult );
+				RegCloseKey( hRegKey );
+				return false;
+	};
+
+	regvalue = g_Config.SoundFeedback ? 1 : 0;
+	if ( (lResult = RegSetValueEx(
+			hRegKey,
+			"SoundFeedback",
+			0,
+			REG_DWORD,
+			(unsigned char*)&regvalue,
+			sizeof regvalue)) != 0 ) {
 				SetLastError( lResult );
 				RegCloseKey( hRegKey );
 				return false;
@@ -632,7 +694,7 @@ INT_PTR CALLBACK MainDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam 
 				MessageBeep(MB_ICONEXCLAMATION); 
 				MessageBox(hDlg, "Couldn't initialize the joystick.", NULL, MB_OK | MB_ICONEXCLAMATION);
 ////				// Just continue....they have been warned, but can at least see the screen.
-//				PostMessage(hDlg,WM_CLOSE,0,0L); 
+// 				PostMessage(hDlg,WM_CLOSE,0,0L); 
 		    } 
 
 			if ( g_Config.RememberWindow &&
@@ -642,7 +704,7 @@ INT_PTR CALLBACK MainDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam 
 			}
 
 			// Make sure there is some activity so joystick buttons > 4 are noticed
-			SetTimer( hDlg, 1, 333, NULL );
+			SetTimer( hDlg, 42, 100, NULL );
 					
 			break;
 
@@ -666,14 +728,17 @@ INT_PTR CALLBACK MainDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam 
             break;
 
         case WM_TIMER:
-			if ( g_bWriting && !WriteToFile() )
+			// Deal with time 1 only
+			if ( wParam == 1 && g_bWriting && !WriteToFile() )
 			{
-                KillTimer( hDlg, 0 );    
+                KillTimer( hDlg, 1 );    
                 MessageBox( NULL, TEXT("Error Writing Output File. ") \
                             TEXT("The monitor will now exit."), TEXT("Joystick Monitor"), 
                             MB_ICONERROR | MB_OK );
                 EndDialog( hDlg, TRUE ); 
             }
+
+			UpdateInputState( hDlg );
 			break; 
 
 		case WM_COMMAND:
@@ -732,23 +797,22 @@ INT_PTR CALLBACK MainDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam 
 			// We don't get notified for button events for buttons > 4,
 			// so poll here instead.
 			if ( g_pJoystick )
-				OnJoystickButton( hDlg );
+				CheckJoystickButton( hDlg );
 
 			return FALSE; // Message not handled 
     }
 
 	if ( g_pJoystick )
-		OnJoystickButton( hDlg );
+		CheckJoystickButton( hDlg );
 
 	return TRUE;
 }
-
 
 //-----------------------------------------------------------------------------
 // Name: OnJoystickButton
 // Desc: Checks to see if button controlling writing to file is pressed, and deals with it.
 //-----------------------------------------------------------------------------
-void OnJoystickButton( HWND hDlg )
+void CheckJoystickButton( HWND hDlg )
 {
 	typedef enum { Down, Up = !Down } ButtonState;
 	static ButtonState state = Up;
@@ -761,9 +825,10 @@ void OnJoystickButton( HWND hDlg )
 	if ( PollJoystick( js ) == S_OK ) {
 		
 		// If the button we want just went from up to down....
-		if ( state == Up &&	(js.rgbButtons[ g_Config.JoystickButton -1 ] & 0x80) ) {
+		if ( state == Up &&	g_JoystickButton ) {
 
 			state = Down;
+			g_JoystickButton = false;
 
 			// avoid a triple-click reopening the file by requiring 3 secs to pass
 			if ( !g_bWriting && timenow - lastclick >= 3 ) {
@@ -791,7 +856,7 @@ void OnJoystickButton( HWND hDlg )
 
 				// Set a timer to go off n times a second. At every timer message
 				// the input device will be read and written to file.
-			    SetTimer( hDlg, 1, 1000 / g_Config.TicksPerSec, NULL );
+			    SetTimer( hDlg, 1, (unsigned int)(1000.0 / g_Config.TicksPerSec), NULL );
 
 				if ( !QueryPerformanceFrequency( &g_timerfreq ) || !QueryPerformanceCounter( &g_timerstart ) ) {
 					MessageBox( NULL, TEXT("Can't Initialize Timers. ") \
@@ -814,7 +879,7 @@ void OnJoystickButton( HWND hDlg )
 
 			lastclick = timenow;
 		
-		} else if ( state == Down && !(js.rgbButtons[ g_Config.JoystickButton -1 ] & 0x80) ) {
+		} else if ( state == Down && !g_JoystickButton ) {
 
 			state = Up;
 		}
@@ -893,15 +958,21 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 			    if ( g_Config.ShowAxes ==  true ) 
 					CheckDlgButton( hDlg, IDC_SHOW_COORDS, BST_CHECKED );
 						else CheckDlgButton( hDlg, IDC_SHOW_COORDS, BST_UNCHECKED );
+			    if ( g_Config.SoundFeedback ==  true ) 
+					CheckDlgButton( hDlg, IDC_SOUND_FEEDBACK, BST_CHECKED );
+						else CheckDlgButton( hDlg, IDC_SOUND_FEEDBACK, BST_UNCHECKED );
 
-				sprintf(buf, "%u", g_Config.TicksPerSec );
+				sprintf(buf, "%0.1lf", g_Config.TicksPerSec );
 					SetWindowText( GetDlgItem( hDlg, IDC_SAMPLES_PER_SEC ), buf );
 				sprintf(buf, "%u", g_Config.JoystickButton );
 					SetWindowText( GetDlgItem( hDlg, IDC_JOYSTICK_BUTTON ), buf );
+				sprintf(buf, "%u", g_Config.Button2 );
+					SetWindowText( GetDlgItem( hDlg, IDC_BUTTON2 ), buf );
 				sprintf(buf, "%u", g_Config.XYMinMax );
 					SetWindowText( GetDlgItem( hDlg, IDC_XYMINMAX ), buf );
 				sprintf(buf, "%u", g_Config.EllipseSize );
 					SetWindowText( GetDlgItem( hDlg, IDC_POINTER_SIZE ), buf );
+
 				SetWindowText( GetDlgItem( hDlg, IDC_BANNER_COMMENT ), g_Config.BannerComment );
 				SetWindowText( GetDlgItem( hDlg, IDC_LABEL_POSX ), g_Config.LabelPosX );
 				SetWindowText( GetDlgItem( hDlg, IDC_LABEL_NEGX ), g_Config.LabelNegX );
@@ -918,6 +989,7 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 					break;
 
 				case IDC_CONFIG_CANCEL:
+					LoadConfig(); // kill any changes we made
 				    EnableWindow( GetWindow( hDlg, GW_OWNER ), TRUE );
                     EndDialog( hDlg, 0 );
 					break;
@@ -937,27 +1009,56 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 							g_Config.OutputOnlyChanges = true; else g_Config.OutputOnlyChanges = false;
 						if( IsDlgButtonChecked( hDlg, IDC_SHOW_COORDS ) == BST_CHECKED )
 							g_Config.ShowAxes = true; else g_Config.ShowAxes = false;
+						if( IsDlgButtonChecked( hDlg, IDC_SOUND_FEEDBACK ) == BST_CHECKED )
+							g_Config.SoundFeedback = true; else g_Config.SoundFeedback = false;
 
 						GetWindowText( GetDlgItem( hDlg, IDC_SAMPLES_PER_SEC ), buf, sizeof buf );
-						if ( atoi(buf) <= 0 ) {
-								MessageBox(hDlg, "Ticks per second must be greater than zero.", NULL, MB_OK | MB_ICONEXCLAMATION);
+						errno = 0;
+						if ( atof(buf) <= 0 || errno != 0 ) {
+								MessageBox(hDlg, "Ticks per second must be a floating point number greater than zero.", NULL, MB_OK | MB_ICONEXCLAMATION);
 								break;
 						}
-						if ( atoi(buf) > 100 )
-							MessageBox(hDlg, "Warning: Your clock might not be able to exceed 100 ticks per second.", NULL, MB_OK | MB_ICONWARNING);
-						g_Config.TicksPerSec = atoi(buf);
+
+						g_Config.TicksPerSec = atof(buf);
+						unsigned long millisecs = (unsigned long)(1000.0 / g_Config.TicksPerSec);
+						if ( millisecs < USER_TIMER_MINIMUM ) {
+							millisecs = 1000 / USER_TIMER_MINIMUM;
+							char text[128];
+							_snprintf(text, sizeof text, "Warning: Your clock cannot exceed %lu ticks per second.", millisecs);
+							MessageBox(hDlg, text, "Warning", MB_OK | MB_ICONWARNING);
+							g_Config.TicksPerSec = 1000.0 / USER_TIMER_MINIMUM;
+						}
+
+						DIDEVCAPS dc;
+						DIJOYSTATE js;
+						dc.dwSize = sizeof dc;
+						if ( !g_pJoystick || g_pJoystick->GetCapabilities(&dc) != DI_OK )
+							dc.dwButtons = sizeof js.rgbButtons / sizeof js.rgbButtons[0]; // fake it & use the max
 
 						GetWindowText( GetDlgItem( hDlg, IDC_JOYSTICK_BUTTON ), buf, sizeof buf );
-						DIJOYSTATE js;
-						if ( atoi(buf) < 1 || atoi(buf) > sizeof js.rgbButtons / sizeof js.rgbButtons[0] ) {
-								MessageBox(hDlg, "Joystick button must be between 1 and 32(?) inclusive", NULL, MB_OK | MB_ICONEXCLAMATION);
-								break;
+						if ( atoi(buf) < 1 || (unsigned)atoi(buf) > dc.dwButtons ) {
+							char text[128];
+							_snprintf(text, sizeof text, "Joystick button to start & stop writing must be between 1 and %lu inclusive", dc.dwButtons );
+							MessageBox(hDlg, text, NULL, MB_OK | MB_ICONEXCLAMATION);
+							break;
 						}
-						if ( atoi(buf) > 8 )
-							MessageBox(hDlg, "Warning: If the joystick button doesn't actually exist no writing will occur.", NULL, MB_OK | MB_ICONWARNING);
 						g_Config.JoystickButton = atoi(buf);
 						if ( !g_bWriting )
 							_snprintf( g_MsgText, sizeof g_MsgText, "Click button %u to start", g_Config.JoystickButton );
+
+						GetWindowText( GetDlgItem( hDlg, IDC_BUTTON2 ), buf, sizeof buf );
+						if ( atoi(buf) < 0 || (unsigned)atoi(buf) > dc.dwButtons ) {
+							char text[128];
+							_snprintf(text, sizeof text, "Joystick button to monitor must be between 1 and %lu inclusive", dc.dwButtons );
+							MessageBox(hDlg, text, NULL, MB_OK | MB_ICONEXCLAMATION);
+							break;
+						}
+						g_Config.Button2 = atoi(buf);
+
+						if ( g_Config.JoystickButton == g_Config.Button2 ) {
+							MessageBox(hDlg, "The button to start & stop writing cannot be the same as the button to monitor", NULL, MB_OK | MB_ICONEXCLAMATION);
+							break;
+						}
 
 						GetWindowText( GetDlgItem( hDlg, IDC_XYMINMAX ), buf, sizeof buf);
 						if ( atoi(buf) <= 0 ) {
@@ -1101,7 +1202,7 @@ bool StartWriting( void )
 				if ( g_Config.OutputFileBanner ) {
 					time_t now = time(NULL);
 					struct tm * nowtm = localtime(&now);
-					if ( fprintf(fp, "# File created at %s# Axes magnitude: %u\n# Ticks / second: %u\n# %s\n",
+					if ( fprintf(fp, "# File created at %s# Axes magnitude: %u\n# Ticks / second: %0.1lf\n# %s\n",
 							asctime(nowtm), g_Config.XYMinMax, g_Config.TicksPerSec, g_Config.BannerComment ) <= 0 ) {
 						_snprintf(g_MsgText, sizeof g_MsgText, "Error %u writing to output file %s",
 								errno, buf);
@@ -1128,21 +1229,21 @@ void StopWriting( void )
 }
 
 //-----------------------------------------------------------------------------
-// Name: SopWriting()
-// Desc: Close the output file.
+// Name: WriteToFile()
+// Desc: Write data to the output file.
 //-----------------------------------------------------------------------------
 bool WriteToFile( void )
-
 {
     DIJOYSTATE js;           // DInput joystick state 
     HRESULT hr;
+	bool retcode;
 
     // Get the input's device state
     if( FAILED( hr = PollJoystick( js ) ) )
         return false;
 
 	static long oldx = g_Config.XYMinMax + 1, oldy;
-	if ( g_Config.OutputOnlyChanges == true ) {
+	if ( g_Config.OutputOnlyChanges == true && !g_Button2) {
 		if ( js.lX == oldx && js.lY == oldy )
 			return true;
 		oldx = js.lX, oldy = js.lY;
@@ -1154,10 +1255,15 @@ bool WriteToFile( void )
 
 	float elapsed = (float)(timernow.QuadPart - g_timerstart.QuadPart) / g_timerfreq.QuadPart;
 
-	if ( fprintf(fp, "%6.3f,%5ld,%5ld\n", elapsed,	js.lX, -js.lY ) <= 0 )	// flip Y axis
-		return false;
+	// Report state of extra button if we're watching it.
+	if ( g_Config.Button2 ) {
+		retcode = (fprintf(fp, "%6.3f,%5ld,%5ld,%2i\n", elapsed, js.lX, -js.lY, g_Button2 ) > 0 );	// flip Y axis
+		g_Button2 = false;
+	} else {
+		retcode = (fprintf(fp, "%6.3f,%5ld,%5ld\n", elapsed, js.lX, -js.lY ) > 0 );
+	}
 
-	return true;
+	return retcode;
 }
 
 //-----------------------------------------------------------------------------
@@ -1211,7 +1317,17 @@ HRESULT InitDirectInput( HWND hDlg )
                                                 (VOID*)hDlg, DIDFT_AXIS ) ) )
         return hr;
 
-    return S_OK;
+	// Set a buffer for storing events
+    DIPROPDWORD dipwd; 
+    dipwd.diph.dwSize       = sizeof(DIPROPDWORD); 
+    dipwd.diph.dwHeaderSize = sizeof(DIPROPHEADER); 
+    dipwd.diph.dwHow        = DIPH_DEVICE; 
+    dipwd.diph.dwObj        = 0;
+	dipwd.dwData			= 1024;			  // number of events
+    if( FAILED( hr = g_pJoystick->SetProperty( DIPROP_BUFFERSIZE, &dipwd.diph ) ) ) 
+	    return hr;
+
+	return S_OK;
 }
 
 //-----------------------------------------------------------------------------
@@ -1272,7 +1388,9 @@ BOOL CALLBACK EnumObjectsCallback( const DIDEVICEOBJECTINSTANCE* pdidoi,
 
 //-----------------------------------------------------------------------------
 // Name: PollJoystick()
-// Desc: Return the current state of the joystick
+// Desc: Return the current state of the joystick.
+// Also sets the two global booleans to report if a button was pressed since
+// the last check.
 //-----------------------------------------------------------------------------
 HRESULT PollJoystick( DIJOYSTATE& js )
 {
@@ -1282,7 +1400,7 @@ HRESULT PollJoystick( DIJOYSTATE& js )
 		return -1;
 
 	// Poll the device to read the current state. Not always necessary, in which
-	// case it return an error. Just ignore that.
+	// case it returns an error. Just ignore that.
     g_pJoystick->Poll(); 
 
     // Get the input's device state
@@ -1302,6 +1420,20 @@ HRESULT PollJoystick( DIJOYSTATE& js )
 	    if( FAILED( hr = g_pJoystick->GetDeviceState( sizeof js, &js ) ) )
 	        return hr;
     }
+
+	// Loop through all events, looking just for button presses since the last check
+	DIDEVICEOBJECTDATA rgdod;
+	DWORD dwInOut = 1;
+	while ( g_pJoystick->GetDeviceData( sizeof rgdod, &rgdod, &dwInOut, 0 ) == DI_OK &&	dwInOut == 1 ) {
+		if ( rgdod.dwOfs == DIJOFS_BUTTON(g_Config.JoystickButton -1) && (rgdod.dwData & 0x80) )
+			g_JoystickButton = true;
+		else if (g_Config.Button2)
+			if ( rgdod.dwOfs == DIJOFS_BUTTON(g_Config.Button2 -1) && (rgdod.dwData & 0x80) ) {
+				g_Button2 = true;	// button was pressed
+				if (g_Config.SoundFeedback)
+					MessageBeep(-1);
+			}
+	}
 
     return S_OK;
 }
