@@ -1,8 +1,27 @@
+/*
+ * Copyright 2002-2011 Giles Malet.
+ * 
+ * This file is part of JoyMon.
+ * 
+ * JoyMon is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * JoyMon is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with JoyMon.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 //----------------------------------------------------------------------------
 // File: Joystick.cpp
 //
-// Desc: Demonstrates an application which receives immediate 
-//       joystick data in exclusive mode via a dialog timer.
+// This file is derived from the Microsoft DirectX samples.
+// The original contained this copyright notice:
 //
 // Copyright (c) 1998-2001 Microsoft Corporation. All rights reserved.
 //-----------------------------------------------------------------------------
