@@ -86,7 +86,7 @@ static bool g_JoystickButton = false, g_Button2 = false;
 static const char g_Version[] = "Version: " __DATE__ ", "  __TIME__;
 
 static struct {
-	bool ShowAxes, ShowFilename, OutputFileBanner, OutputOnlyChanges, RememberWindow, SoundFeedback;
+	bool ShowAxes, ShowFilename, OutputFileBanner, OutputOnlyChanges, RememberWindow, SoundFeedback, SuppressX, SuppressY;
 	long EllipseSize, XYMinMax, JoystickButton, Button2, WPosnX, WPosnY, WSizeX, WSizeY;
 	double TicksPerSec;
 	char FilePattern[MAX_PATH];	// Where to put output data. Will add 3 digit extension.
@@ -132,6 +132,8 @@ bool LoadConfig( void )
 	g_Config.JoystickButton = 7;
 	g_Config.Button2 = 1;
 	g_Config.SoundFeedback = true;
+	g_Config.SuppressX = false;
+	g_Config.SuppressY = false;
 	g_Config.WPosnX = 0;
 	g_Config.WPosnY = 0;
 	g_Config.WSizeX = 273;
@@ -290,6 +292,28 @@ bool LoadConfig( void )
 		regvalue,
 		&reglen)) == 0 ) {
 			g_Config.SoundFeedback = *((bool*)regvalue);
+	}
+
+	reglen = sizeof regvalue;
+	if ( (lResult = RegQueryValueEx(
+		hRegKey,
+		"SuppressX",
+		0,
+		&dwType,
+		regvalue,
+		&reglen)) == 0 ) {
+			g_Config.SuppressX = *((bool*)regvalue);
+	}
+
+	reglen = sizeof regvalue;
+	if ( (lResult = RegQueryValueEx(
+		hRegKey,
+		"SuppressY",
+		0,
+		&dwType,
+		regvalue,
+		&reglen)) == 0 ) {
+			g_Config.SuppressY = *((bool*)regvalue);
 	}
 
 	reglen = sizeof regvalue;
@@ -555,6 +579,32 @@ bool SaveConfig( void )
 	if ( (lResult = RegSetValueEx(
 			hRegKey,
 			"SoundFeedback",
+			0,
+			REG_DWORD,
+			(unsigned char*)&regvalue,
+			sizeof regvalue)) != 0 ) {
+				SetLastError( lResult );
+				RegCloseKey( hRegKey );
+				return false;
+	};
+
+	regvalue = g_Config.SuppressX ? 1 : 0;
+	if ( (lResult = RegSetValueEx(
+			hRegKey,
+			"SuppressX",
+			0,
+			REG_DWORD,
+			(unsigned char*)&regvalue,
+			sizeof regvalue)) != 0 ) {
+				SetLastError( lResult );
+				RegCloseKey( hRegKey );
+				return false;
+	};
+
+	regvalue = g_Config.SuppressY ? 1 : 0;
+	if ( (lResult = RegSetValueEx(
+			hRegKey,
+			"SuppressY",
 			0,
 			REG_DWORD,
 			(unsigned char*)&regvalue,
@@ -994,6 +1044,15 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 			    if ( g_Config.SoundFeedback ==  true ) 
 					CheckDlgButton( hDlg, IDC_SOUND_FEEDBACK, BST_CHECKED );
 						else CheckDlgButton( hDlg, IDC_SOUND_FEEDBACK, BST_UNCHECKED );
+			    if ( g_Config.SuppressX ==  false && g_Config.SuppressY == false ) 
+					CheckDlgButton( hDlg, IDC_SUPPRESS_NONE, BST_CHECKED );
+						else CheckDlgButton( hDlg, IDC_SUPPRESS_NONE, BST_UNCHECKED );
+			    if ( g_Config.SuppressX ==  true ) 
+					CheckDlgButton( hDlg, IDC_SUPPRESS_X, BST_CHECKED );
+						else CheckDlgButton( hDlg, IDC_SUPPRESS_X, BST_UNCHECKED );
+			    if ( g_Config.SuppressY ==  true ) 
+					CheckDlgButton( hDlg, IDC_SUPPRESS_Y, BST_CHECKED );
+						else CheckDlgButton( hDlg, IDC_SUPPRESS_Y, BST_UNCHECKED );
 
 				sprintf(buf, "%0.1lf", g_Config.TicksPerSec );
 					SetWindowText( GetDlgItem( hDlg, IDC_SAMPLES_PER_SEC ), buf );
@@ -1044,6 +1103,10 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 							g_Config.ShowAxes = true; else g_Config.ShowAxes = false;
 						if( IsDlgButtonChecked( hDlg, IDC_SOUND_FEEDBACK ) == BST_CHECKED )
 							g_Config.SoundFeedback = true; else g_Config.SoundFeedback = false;
+						if( IsDlgButtonChecked( hDlg, IDC_SUPPRESS_X ) == BST_CHECKED )
+							g_Config.SuppressX = true; else g_Config.SuppressX = false;
+						if( IsDlgButtonChecked( hDlg, IDC_SUPPRESS_Y ) == BST_CHECKED )
+							g_Config.SuppressY = true; else g_Config.SuppressY = false;
 
 						GetWindowText( GetDlgItem( hDlg, IDC_SAMPLES_PER_SEC ), buf, sizeof buf );
 						errno = 0;
@@ -1133,6 +1196,9 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 				                MB_ICONERROR | MB_OK );
 						}
 
+						// TODO - if config changes something on screen, it's not redrawing properly
+						InvalidateRect( GetWindow( hDlg, GW_OWNER ), NULL, false );
+						UpdateWindow( GetWindow( hDlg, GW_OWNER ) );
 						EnableWindow( GetWindow( hDlg, GW_OWNER ), TRUE );
 						EndDialog( hDlg, 0 );
 						break;
@@ -1283,7 +1349,7 @@ bool WriteToFile( void )
 	}
 
 	DWORD timernow = GetTickCount();
-	float elapsed = (float)(timernow - g_timerstart) / 1000.0;
+	float elapsed = (float)(timernow - g_timerstart) / 1000.0f;
 
 	// Report state of extra button if we're watching it.
 	if ( g_Config.Button2 ) {
@@ -1451,6 +1517,13 @@ HRESULT PollJoystick( DIJOYSTATE& js )
 	        return hr;
     }
 
+	// If we're suppressing motion, just clear the coords
+	if ( g_Config.SuppressX == true ) {
+		js.lX = 0;
+	} else if ( g_Config.SuppressY == true ) {
+		js.lY = 0;
+	}
+
 	// Loop through all events, looking just for button presses since the last check
 	DIDEVICEOBJECTDATA rgdod;
 	DWORD dwInOut = 1;
@@ -1537,20 +1610,20 @@ HRESULT UpdateInputState( HWND hDlg )
 	SetTextColor( hDC, RGB(0x00,0x00,0x00) );
 	SetBkColor( hDC, RGB(0xff,0xff,0xff) );
 	if ( g_Config.LabelNegX[0] != 0 ) {
-		SetTextAlign( hDC, TA_BOTTOM | TA_LEFT );
-		TextOut( hDC, 2,y-2, g_Config.LabelNegX, strlen(g_Config.LabelNegX) );
+		SetTextAlign( hDC, TA_TOP | TA_LEFT );
+		TextOut( hDC, 2,y+2, g_Config.LabelNegX, strlen(g_Config.LabelNegX) );
 	}
 	if ( g_Config.LabelPosX[0] != 0 ) {
 		SetTextAlign( hDC, TA_TOP | TA_RIGHT );
 		TextOut( hDC, xsize-2,y+2, g_Config.LabelPosX, strlen(g_Config.LabelPosX) );
 	}
 	if ( g_Config.LabelNegY[0] != 0 ) {	// axis is flipped
-		SetTextAlign( hDC, TA_BOTTOM | TA_RIGHT );
-		TextOut( hDC, x-2,ysize-2, g_Config.LabelNegY, strlen(g_Config.LabelNegY) );
+		SetTextAlign( hDC, TA_BOTTOM | TA_CENTER );
+		TextOut( hDC, x,ysize-2, g_Config.LabelNegY, strlen(g_Config.LabelNegY) );
 	}
 	if ( g_Config.LabelPosY[0] != 0 ) {
-		SetTextAlign( hDC, TA_TOP | TA_LEFT );
-		TextOut( hDC, x+2,2, g_Config.LabelPosY, strlen(g_Config.LabelPosY) );
+		SetTextAlign( hDC, TA_TOP | TA_CENTER );
+		TextOut( hDC, x,2, g_Config.LabelPosY, strlen(g_Config.LabelPosY) );
 	}
 	SetTextAlign( hDC, oldalign );
 
@@ -1565,10 +1638,20 @@ HRESULT UpdateInputState( HWND hDlg )
     // Draw center cross hair
     SelectPen( hDC, GetStockPen(DC_PEN) );
 	SetDCPenColor( hDC, RGB(0x0f,0x0f,0xff) );
-    MoveToEx( hDC, x, 0, NULL );
-    LineTo(   hDC, x, ysize );
-    MoveToEx( hDC, 0, y, NULL );
-    LineTo(   hDC, xsize, y );
+	if (!g_Config.SuppressY) {
+	    MoveToEx( hDC, x, 15, NULL );
+		LineTo(   hDC, x, ysize - 15 );
+	} else {
+	    MoveToEx( hDC, x, y-radius-3, NULL );				// make a teeny bit bigger than the 
+		LineTo(   hDC, x, y+radius+3);						// ellipse cursor.
+	}
+	if (!g_Config.SuppressX) {
+	    MoveToEx( hDC, 0, y, NULL );
+		LineTo(   hDC, xsize, y );
+	} else {
+	    MoveToEx( hDC, x-radius-2, y, NULL );
+		LineTo(   hDC, x+radius+2, y);
+	}
 
 	// Draw mark, making sure to adjust so we don't erase window edges
 	x += MulDiv( xsize, js.lX, 2 * g_Config.XYMinMax );

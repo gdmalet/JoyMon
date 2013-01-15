@@ -1,25 +1,6 @@
-/*
- * Copyright 2002-2011 Giles Malet.
- * 
- * This file is part of JoyMon.
- * 
- * JoyMon is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- * 
- * JoyMon is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with JoyMon.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by joystick.rc
+// Used by Joystick.rc
 //
 #define IDI_MAIN                        102
 #define IDD_JOYST_IMM                   103
@@ -84,6 +65,10 @@
 #define IDC_BUTTON2                     1067
 #define IDC_FEEDBACK                    1068
 #define IDC_SOUND_FEEDBACK              1068
+#define IDC_SUPPRESS_NONE               1072
+#define IDC_RADIO3                      1073
+#define IDC_SUPPRESS_Y                  1073
+#define IDC_SUPPRESS_X                  1074
 
 // Next default values for new objects
 // 
@@ -91,7 +76,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        109
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1069
+#define _APS_NEXT_CONTROL_VALUE         1075
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
