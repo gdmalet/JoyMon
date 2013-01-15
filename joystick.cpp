@@ -1164,7 +1164,8 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 						if ( atoi(buf) != g_Config.XYMinMax ) {
 							g_Config.XYMinMax = atoi(buf);
 							// Try re-init the joystick to pick up the new axes
-							g_pJoystick->EnumObjects( EnumObjectsCallback, (VOID*)hDlg, DIDFT_AXIS );
+							if (g_pJoystick != NULL)
+								g_pJoystick->EnumObjects( EnumObjectsCallback, (VOID*)hDlg, DIDFT_AXIS );
 						}
 
 						GetWindowText( GetDlgItem( hDlg, IDC_POINTER_SIZE ), buf, sizeof buf );
