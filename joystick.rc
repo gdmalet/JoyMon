@@ -156,7 +156,7 @@ END
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDI_MAIN                ICON                    "C:\\Program Files\\Microsoft DirectX SDK (March 2009)\\Samples\\Media\\misc\\directx.ico"
+IDI_MAIN                ICON                    "C:\\Program Files (x86)\\Microsoft DirectX SDK (June 2010)\\Samples\\Media\\misc\\directx.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //
