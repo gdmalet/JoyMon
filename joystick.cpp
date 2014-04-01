@@ -74,7 +74,7 @@ bool	SaveConfig( void );
 LPDIRECTINPUT8       g_pDI              = NULL;         
 LPDIRECTINPUTDEVICE8 g_pJoystick        = NULL;     
 
-bool g_bWriting = false;
+bool g_bWriting = false, g_bWriteError = false;
 HINSTANCE g_hInst;
 FILE * fp = NULL;
 DWORD g_timerstart;
@@ -794,7 +794,8 @@ INT_PTR CALLBACK MainDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam 
 			}
 			break;
 
-		case MM_JOY1MOVE :                     // changed position 
+		case WM_TIMER:		// Timer 42 allows us to keep the GUI updated
+		case MM_JOY1MOVE:	// changed position
             if( FAILED( UpdateInputState( hDlg ) ) )
             {
                 MessageBox( NULL, TEXT("Error Reading Input State. ") \
@@ -802,20 +803,16 @@ INT_PTR CALLBACK MainDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam 
                             MB_ICONERROR | MB_OK );
                 EndDialog( hDlg, TRUE ); 
             }
-            break;
 
-        case WM_TIMER:
-			// Timer #1 controls writes to the file
-			if ( wParam == 1 && g_bWriting && !WriteToFile() )
+			// Make sure all is well with writing.
+			if ( g_bWriting && g_bWriteError )
 			{
-                KillTimer( hDlg, 1 );    
                 MessageBox( NULL, TEXT("Error Writing Output File. ") \
                             TEXT("The monitor will now exit."), TEXT("Joystick Monitor"), 
                             MB_ICONERROR | MB_OK );
                 EndDialog( hDlg, TRUE ); 
             }
 
-			UpdateInputState( hDlg );
 			break; 
 
 		case WM_COMMAND:
@@ -856,12 +853,6 @@ INT_PTR CALLBACK MainDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam 
 				break;
 			}
 
-//		case WM_ACTIVATE:
-//			UpdateInputState( hDlg );
-//			InvalidateRect( hDlg, NULL, false );
-//			UpdateWindow( hDlg );
-//			break;
-
 		case WM_DESTROY:
             // Cleanup everything
 			if ( fp ) { fclose(fp); fp = 0; }
@@ -886,6 +877,19 @@ INT_PTR CALLBACK MainDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam 
 }
 
 //-----------------------------------------------------------------------------
+// Name: WaitOrTimerCallback
+// Desc: Catch MM timer ticks
+//-----------------------------------------------------------------------------
+VOID CALLBACK WaitOrTimerCallback(PVOID lpParameter, BOOLEAN TimerOrWaitFired)
+{
+	if (g_bWriting && !WriteToFile())
+	{
+		// Pass a clue back to the gui thread.
+		g_bWriteError = true;
+	}
+}
+
+//-----------------------------------------------------------------------------
 // Name: OnJoystickButton
 // Desc: Checks to see if button controlling writing to file is pressed, and deals with it.
 //-----------------------------------------------------------------------------
@@ -898,6 +902,8 @@ void CheckJoystickButton( HWND hDlg )
 	static time_t lastclick = 0;
 	static time_t started = 0;
 	time_t timenow = time(0);
+	static HANDLE MMtimer;
+	static UINT period;
 
 	if ( PollJoystick( js ) == S_OK ) {
 		
@@ -925,6 +931,8 @@ void CheckJoystickButton( HWND hDlg )
 
 				} else {
 
+					g_bWriteError = false;	// all good so far.
+
 					if ( !g_Config.ShowFilename )
 						g_MsgText[0] = 0;
 
@@ -937,19 +945,30 @@ void CheckJoystickButton( HWND hDlg )
 					// Make a noise
 					MessageBeep(MB_ICONASTERISK); 
 
-					// Set a timer to go off n times a second. At every timer message
-					// the input device will be read and written to file.
-					SetTimer( hDlg, 1, (unsigned int)(1000.0 / g_Config.TicksPerSec), NULL );
+					// Try set a 1ms timer resolution, so we get better timing intervals. Then request
+					// a tick at the required interval. Note that the clock usually ticks at 64 Hz, so
+					// there is a max 15.6ms (1000/64) error. Using SetTimer() results in an accumulating
+					// error, but CreateTimerQueuetimer() does better, with the system adjusting calls here
+					// to compensate, with zero accumulating error, which is more desirable.
+					TIMECAPS tc;
+					if (timeGetDevCaps(&tc, sizeof(TIMECAPS)) != TIMERR_NOERROR ||
+						(period=(min(max(tc.wPeriodMin, 1), tc.wPeriodMax))) < 1 ||
+						 timeBeginPeriod(period) != TIMERR_NOERROR ||
+						 CreateTimerQueueTimer(&MMtimer, NULL, WaitOrTimerCallback, (PVOID)69,
+							0, (unsigned int)(1000.0 / g_Config.TicksPerSec), WT_EXECUTEDEFAULT) == FALSE) {
+			                MessageBox( NULL, TEXT("Timer initialisation failed; cannot continue."),
+		                    TEXT("The monitor will now exit."), MB_ICONERROR | MB_OK );
+				        EndDialog( hDlg, 0 );
+					}
 
-					//timeBeginPeriod(1); // supposedly makes for better granularity in GetTickCount()
 					g_timerstart = GetTickCount();
 				}
 
 			} else if ( g_bWriting && timenow - started > 2 ) {
 				if ( timenow - lastclick <= 1 ) {
 					// two clicks in a second means we stop writing, but must write for a couple of secs.
-					KillTimer( hDlg, 1 );
-					//timeEndPeriod(1);
+					timeEndPeriod(period);
+					DeleteTimerQueueTimer(NULL, MMtimer, NULL);
 					StopWriting();
 					MessageBeep(MB_OK);
 					EnableWindow( GetDlgItem( hDlg, ID_EDIT_CONFIG ), TRUE );
@@ -1192,7 +1211,7 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 						}
 
 						if ( !SaveConfig() ) {
-							MessageBox( NULL, TEXT("Problems writing config to the registry. ") \
+							MessageBox( NULL, TEXT("Problems writing config to the registry. (You may need to run this program with Administrator rights.) ") \
 			                    TEXT("Saved config may be incomplete."), TEXT("Joystick Monitor"), 
 				                MB_ICONERROR | MB_OK );
 						}

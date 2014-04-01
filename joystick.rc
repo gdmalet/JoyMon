@@ -190,7 +190,7 @@ CAPTION "Joystick Monitor -- About"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,130,62,50,14
-    LTEXT           "Adapted from the Direct X 9.1 Samples by\n           gdmalet@shrdlu.kw.net.",IDC_STATIC,18,12,145,25
+    LTEXT           "Adapted from the Direct X 9.1 Samples by\n           gdmalet+joymon@gmail.com.",IDC_STATIC,18,12,145,25
     LTEXT           "Version",IDC_VERSION,18,42,151,14
 END
 

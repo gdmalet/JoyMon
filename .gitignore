@@ -1,4 +1,8 @@
 *.aps
 *.ncb
+*.sdf
 *.suo
 *.user
+joystick.vcxproj.user
+Release
+Debug
