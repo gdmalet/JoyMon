@@ -149,17 +149,26 @@ bool LoadConfig( void )
 	strncpy(g_Config.LabelPosY, "Dominant", sizeof g_Config.LabelPosY);
 	strncpy(g_Config.LabelNegY, "Submissive", sizeof g_Config.LabelNegY);
 
-	if ( (lResult = RegCreateKeyEx(
-			HKEY_LOCAL_MACHINE,
+	// Try read the per-user key. If this fails, there might be an older version of the config
+	// (from a version of this program prior to Sept 2014) under LOCAL_MACHINE, which we try to read
+	// instead. All writes now go to the per-user key.
+	// This is all to avoid requiring admin rights to run.
+	if ( (lResult = RegOpenKeyEx(
+			HKEY_CURRENT_USER,
 			"SOFTWARE\\JoystickMonitor",
-			0, "", 0,
-			KEY_READ,
-			NULL,
-			&hRegKey,
-			NULL)) != 0 ) {
-				SetLastError( lResult );
-				return false;
+			0,
+			KEY_QUERY_VALUE,
+			&hRegKey)) != 0 ) {
+				if ( (lResult = RegOpenKeyEx(
+						HKEY_LOCAL_MACHINE,
+						"SOFTWARE\\JoystickMonitor",
+						0,
+						KEY_QUERY_VALUE,
+						&hRegKey)) != 0 ) {
+							SetLastError( lResult );
+							return false;
 			}
+	}
 
 	reglen = sizeof regvalue;
 	if ( (lResult = RegQueryValueEx(
@@ -440,12 +449,14 @@ bool SaveConfig( void )
 	HKEY hRegKey;
 	unsigned long regvalue;
 
-	if ( (lResult = RegOpenKeyEx(
-			HKEY_LOCAL_MACHINE,
+	if ( (lResult = RegCreateKeyEx(
+			HKEY_CURRENT_USER,
 			"SOFTWARE\\JoystickMonitor",
-			0,
+			0, "", 0,
 			KEY_WRITE,
-			&hRegKey)) != 0 ) {
+			NULL,
+			&hRegKey,
+			NULL)) != 0 ) {
 				SetLastError( lResult );
 				return false;
 	}
