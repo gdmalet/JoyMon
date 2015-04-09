@@ -51,6 +51,7 @@
 #define IDC_POV3                        1044
 #define IDC_TREE2                       1045
 #define IDC_CHANGES_ONLY                1048
+#define IDC_ORIGIN_LOWERLEFT            1048
 #define IDC_BANNER_COMMENT              1054
 #define IDC_CONFIG_ABOUT                1056
 #define IDC_WINDOW_POSN                 1057
@@ -69,6 +70,13 @@
 #define IDC_RADIO3                      1073
 #define IDC_SUPPRESS_Y                  1073
 #define IDC_SUPPRESS_X                  1074
+#define IDC_DRAW_OCTANTS                1075
+#define IDC_LABEL_TOP_LEFT              1076
+#define IDC_LABEL_TOP_RIGHT             1077
+#define IDC_LABEL_BOTTOM_RIGHT          1078
+#define IDC_LABEL_BOTTOM_LEFT           1079
+#define IDC_EDIT1                       1081
+#define IDC_GRID_COUNT                  1081
 
 // Next default values for new objects
 // 
@@ -76,7 +84,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        109
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1075
+#define _APS_NEXT_CONTROL_VALUE         1082
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
