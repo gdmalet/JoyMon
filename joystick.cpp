@@ -87,7 +87,7 @@ static const char g_Version[] = "Version: " __DATE__ ", "  __TIME__;
 
 static struct {
 	bool ShowAxes, ShowFilename, OutputFileBanner, OriginLowerLeft, DrawOctants, RememberWindow, SoundFeedback, SuppressX, SuppressY;
-	long EllipseSize, XYMinMax, JoystickButton, Button2, WPosnX, WPosnY, WSizeX, WSizeY, GridCount;
+	long EllipseSize, XYMinMax, JoystickButton, Button2, WPosnX, WPosnY, WSizeX, WSizeY, GridCount, TickCount;
 	double TicksPerSec;
 	char FilePattern[MAX_PATH];	// Where to put output data. Will add 3 digit extension.
 	char BannerComment[1024], LabelPosX[128], LabelPosY[128], LabelNegX[128], LabelNegY[128],
@@ -130,6 +130,7 @@ bool LoadConfig( void )
 	g_Config.RememberWindow = true;
 	g_Config.EllipseSize = 2;
 	g_Config.GridCount = 0;
+	g_Config.TickCount = 0;
 	g_Config.XYMinMax = 1000;
 	g_Config.TicksPerSec = 2.0;
 	g_Config.JoystickButton = 7;
@@ -274,6 +275,17 @@ bool LoadConfig( void )
 		regvalue,
 		&reglen)) == 0 ) {
 			g_Config.GridCount = *((unsigned long*)regvalue);
+	}
+
+	reglen = sizeof regvalue;
+	if ( (lResult = RegQueryValueEx(
+		hRegKey,
+		"TickCount",
+		0,
+		&dwType,
+		regvalue,
+		&reglen)) == 0 ) {
+			g_Config.TickCount = *((unsigned long*)regvalue);
 	}
 
 	reglen = sizeof regvalue;
@@ -643,6 +655,18 @@ bool SaveConfig( void )
 			REG_DWORD,
 			(unsigned char*)&g_Config.GridCount,
 			sizeof g_Config.GridCount)) != 0 ) {
+				SetLastError( lResult );
+				RegCloseKey( hRegKey );
+				return false;
+	};
+
+	if ( (lResult = RegSetValueEx(
+			hRegKey,
+			"TickCount",
+			0,
+			REG_DWORD,
+			(unsigned char*)&g_Config.TickCount,
+			sizeof g_Config.TickCount)) != 0 ) {
 				SetLastError( lResult );
 				RegCloseKey( hRegKey );
 				return false;
@@ -1248,6 +1272,8 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 					SetWindowText( GetDlgItem( hDlg, IDC_XYMINMAX ), buf );
 				sprintf(buf, "%u", g_Config.GridCount );
 					SetWindowText( GetDlgItem( hDlg, IDC_GRID_COUNT ), buf );
+				sprintf(buf, "%u", g_Config.TickCount );
+					SetWindowText( GetDlgItem( hDlg, IDC_TICK_COUNT ), buf );
 				sprintf(buf, "%u", g_Config.EllipseSize );
 					SetWindowText( GetDlgItem( hDlg, IDC_POINTER_SIZE ), buf );
 
@@ -1299,6 +1325,16 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 							g_Config.SuppressX = true; else g_Config.SuppressX = false;
 						if( IsDlgButtonChecked( hDlg, IDC_SUPPRESS_Y ) == BST_CHECKED )
 							g_Config.SuppressY = true; else g_Config.SuppressY = false;
+
+						if (g_Config.DrawOctants && g_Config.OriginLowerLeft ) {
+								MessageBox(hDlg, "Cannot draw octants with the origin in the lower left.", NULL, MB_OK | MB_ICONEXCLAMATION);
+								break;
+						}
+
+						if (g_Config.OriginLowerLeft && (g_Config.SuppressX || g_Config.SuppressY)) {
+								MessageBox(hDlg, "Cannot suppress axes with the origin in the lower left.", NULL, MB_OK | MB_ICONEXCLAMATION);
+								break;
+						}
 
 						GetWindowText( GetDlgItem( hDlg, IDC_SAMPLES_PER_SEC ), buf, sizeof buf );
 						errno = 0;
@@ -1366,6 +1402,13 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 								break;
 						}
 						g_Config.GridCount = atoi(buf);
+
+						GetWindowText( GetDlgItem( hDlg, IDC_TICK_COUNT ), buf, sizeof buf );
+						if ( atoi(buf) < 0 ) {
+								MessageBox(hDlg, "Tick count must be greater than or equal to zero.", NULL, MB_OK | MB_ICONEXCLAMATION);
+								break;
+						}
+						g_Config.TickCount = atoi(buf);
 
 						GetWindowText( GetDlgItem( hDlg, IDC_POINTER_SIZE ), buf, sizeof buf );
 						if ( atoi(buf) <= 0 || atoi(buf) > 50 ) {
@@ -1755,7 +1798,13 @@ HRESULT UpdateInputState( HWND hDlg )
     INT         x, y, radius, xsize, ysize;
 	RECT		rctWinSize;
 
-    // Get the input's device state
+	int Border;			// leave some space around the edges
+	if (g_Config.OriginLowerLeft)
+		Border = 25;	// need more room for labels
+	else
+		Border = 15;
+
+	// Get the input's device state
     if( PollJoystick( js ) != S_OK )
 		memset( &js, 0, sizeof js);	// it may be unplugged.
 
@@ -1782,7 +1831,7 @@ HRESULT UpdateInputState( HWND hDlg )
 	// Use system font for all output text.
 	SelectObject(hDC, GetStockObject(DEFAULT_GUI_FONT)) ;
 
-    // Axes
+    // Show coordinates of the pointer (badly named showaxes...)
 	if ( g_Config.ShowAxes ) {
 		HDC hDCx = GetDC( GetDlgItem( hDlg, IDC_X_AXIS ) );
 		SetTextColor( hDCx, RGB(0x00,0xf0,0x00) );
@@ -1811,26 +1860,50 @@ HRESULT UpdateInputState( HWND hDlg )
 	unsigned int oldalign = GetTextAlign( hDC );
 	SetTextColor( hDC, RGB(0x00,0x00,0x00) );
 	SetBkColor( hDC, RGB(0xff,0xff,0xff) );
+
 	if ( g_Config.LabelNegX[0] != 0 ) {
-		SetTextAlign( hDC, TA_TOP | TA_LEFT );
-		TextOut( hDC, 2,y+2, g_Config.LabelNegX, strlen(g_Config.LabelNegX) );
+		if (!g_Config.OriginLowerLeft) {
+			SetTextAlign( hDC, TA_TOP | TA_LEFT );
+			TextOut( hDC, Border+2,y+2, g_Config.LabelNegX, strlen(g_Config.LabelNegX) );
+		} else {	// Draw the label vertically, outside the axis
+			TEXTMETRIC tm;
+			if (GetTextMetrics(hDC, &tm) == 0)
+				tm.tmHeight = 13;	// wild guess
+			int xpos = Border / 2;
+			int ypos = y - (strlen(g_Config.LabelNegX) * tm.tmHeight) /2;
+			SetTextAlign( hDC, TA_TOP | TA_CENTER );
+			for (unsigned int i=0; i < strlen(g_Config.LabelNegX); i++)
+				TextOut(hDC, xpos, ypos + tm.tmHeight*i, &g_Config.LabelNegX[i], 1);
+		}
 	}
 	if ( g_Config.LabelPosX[0] != 0 ) {
 		SetTextAlign( hDC, TA_TOP | TA_RIGHT );
-		TextOut( hDC, xsize-2,y+2, g_Config.LabelPosX, strlen(g_Config.LabelPosX) );
+		TextOut( hDC, xsize - Border - 2,y+2, g_Config.LabelPosX, strlen(g_Config.LabelPosX) );
 	}
 	if ( g_Config.LabelNegY[0] != 0 ) {	// axis is flipped
-		SetTextAlign( hDC, TA_BOTTOM | TA_CENTER );
-		TextOut( hDC, x,ysize-2, g_Config.LabelNegY, strlen(g_Config.LabelNegY) );
+		int align = TA_CENTER;			// avoid overwriting an axis
+		if (!g_Config.DrawOctants && !g_Config.SuppressY && !g_Config.OriginLowerLeft)
+			align = TA_LEFT;
+		SetTextAlign( hDC, TA_BOTTOM | align );
+		if (g_Config.OriginLowerLeft) {	// label goes below the axis, else above
+			TEXTMETRIC tm;
+			if (GetTextMetrics(hDC, &tm) == 0)
+				tm.tmHeight = 13;	// wild guess
+			TextOut( hDC, x+2, ysize - (Border-tm.tmHeight)/2, g_Config.LabelNegY, strlen(g_Config.LabelNegY) );
+		} else {
+			TextOut( hDC, x+2, ysize - Border - 2, g_Config.LabelNegY, strlen(g_Config.LabelNegY) );
+		}
 	}
 	if ( g_Config.LabelPosY[0] != 0 ) {
-		SetTextAlign( hDC, TA_TOP | TA_CENTER );
-		TextOut( hDC, x,2, g_Config.LabelPosY, strlen(g_Config.LabelPosY) );
+		int align = TA_CENTER;
+		if (!g_Config.DrawOctants && !g_Config.SuppressY && !g_Config.OriginLowerLeft)
+			align = TA_RIGHT;
+		SetTextAlign( hDC, TA_TOP | align );
+		TextOut( hDC, x-2,Border + 2, g_Config.LabelPosY, strlen(g_Config.LabelPosY) );
 	}
 
 	// Need to measure string output sizes to avoid truncation at the edge of the screen
 	// TODO messy, repetitive
-	static int Border = 15;	// leave some space around the edges
 	if ( g_Config.LabelTopLeft[0] != 0 ) {
 		RECT r = { 0, 0, 0, 0 };
 		DrawText(hDC, g_Config.LabelTopLeft, strlen(g_Config.LabelTopLeft), &r, DT_CALCRECT);
@@ -1875,36 +1948,66 @@ HRESULT UpdateInputState( HWND hDlg )
 	
 	// Draw a grid
 	if (g_Config.GridCount > 0) {
-	    SelectPen(hDC, CreatePen(PS_DOT, 0, RGB(0xE0,0xE0,0xE0)));
-		int stepx = (xsize - 2*Border) / (g_Config.GridCount + 1);
-		int stepy = (ysize - 2*Border) / (g_Config.GridCount + 1);
-		for (int i = 1; i <= g_Config.GridCount; i++) {
-			MoveToEx( hDC, Border, Border + stepy*i, NULL );
-			LineTo(   hDC, xsize - Border, Border + stepy*i);
-			MoveToEx( hDC, Border + stepx*i, Border, NULL );
-			LineTo(   hDC, Border + stepx*i, ysize - Border);
+	    SelectPen(hDC, CreatePen(PS_DOT, 0, RGB(0xA0,0xA0,0xA0)));
+		printf("grid: xsize, ysize = %i,%i, x,y = %i,%i\n", xsize, ysize, x,y);
+		for (int i = 0; i <= g_Config.GridCount+1; i++) {
+			//int xpos = Border + stepx*i, ypos = Border + stepy*i;
+			int xpos = Border + (xsize - 2*Border) * i / (g_Config.GridCount + 1);
+			int ypos = Border + (ysize - 2*Border) * i / (g_Config.GridCount + 1);
+			if (abs(xpos-x) == 1)
+				xpos = x;	// avoid rounding error putting this right next to the axis
+			if (abs(ypos-y) == 1)
+				ypos = y;
+			MoveToEx( hDC, Border, ypos, NULL );
+			LineTo(   hDC, xsize - Border, ypos);
+			printf("grid: %4i,%4i -> %4i,%4i    ", Border, ypos, xsize - Border, ypos);
+			MoveToEx( hDC, xpos, Border, NULL );
+			LineTo(   hDC, xpos, ysize - Border);
+			printf("grid: %4i,%4i -> %4i,%4i\n", xpos, Border, xpos, ysize - Border);
 		}
 	}
 
-    // Draw center cross hair
+	// Draw tickmarks on axes
+	if (g_Config.TickCount > 0 && !g_Config.DrawOctants) {
+	    SelectPen( hDC, GetStockPen(DC_PEN) );
+		SetDCPenColor( hDC, RGB(0x0f,0x0f,0xff) );
+		static const int TickSize = 10;	// pixels
+		for (int i = 1; i <= g_Config.TickCount; i++) {
+			int xpos = Border + (xsize - 2*Border) * i / (g_Config.TickCount + 1);
+			int ypos = Border + (ysize - 2*Border) * i / (g_Config.TickCount + 1);
+			if (abs(xpos-x) == 1)
+				xpos = x;	// avoid rounding error putting this right next to the axis
+			if (abs(ypos-y) == 1)
+				ypos = y;
+			if (g_Config.OriginLowerLeft) {
+				MoveToEx( hDC, Border, ypos, NULL );
+				LineTo(   hDC, Border + TickSize, ypos);
+				MoveToEx( hDC, xpos, ysize - Border, NULL );
+				LineTo(   hDC, xpos, ysize - Border - TickSize);
+			} else {
+				if (!g_Config.SuppressY) {
+					MoveToEx( hDC, x - TickSize/2, ypos, NULL );
+					LineTo(   hDC, x + TickSize/2, ypos);
+				}
+				if (!g_Config.SuppressX) {
+					MoveToEx( hDC, xpos, y - TickSize/2, NULL );
+					LineTo(   hDC, xpos, y + TickSize/2);
+				}
+			}
+		}
+	}
+
+    // Draw axes
     SelectPen( hDC, GetStockPen(DC_PEN) );
 	SetDCPenColor( hDC, RGB(0x0f,0x0f,0xff) );
 	if (g_Config.DrawOctants) {
-		int x1, y1, x2, y2, xmagn, ymagn;
-		if (g_Config.OriginLowerLeft) {
-			x1 = Border, y1 = ysize - Border;
-			xmagn = xsize, ymagn = ysize;
-		} else {
-			x1 = x, y1 = y;
-			xmagn = x, ymagn = y;
-		}
-		float deg2rad = 0.0174532925;
+		static const float deg2rad = 0.0174532925f;
 		for (int i = 0; i < 8; i++) {
-			float rads = (22.5 + 45.0*i) * deg2rad;
-			x2 = x * cos(rads);
-			y2 = y * sin(rads);
-			MoveToEx( hDC, x1, y1, NULL );
-			LineTo(   hDC, x1+x2, y1+y2 );
+			float rads = (22.5f + (float)(45*i)) * deg2rad;
+			int x2 = (int)((float)x * cos(rads));
+			int y2 = (int)((float)y * sin(rads));
+			MoveToEx( hDC, x, y, NULL );
+			LineTo(   hDC, x+x2, y+y2 );
 		}
 
 	} else if (g_Config.OriginLowerLeft) {
