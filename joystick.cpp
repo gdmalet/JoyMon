@@ -1867,25 +1867,48 @@ HRESULT UpdateInputState( HWND hDlg )
 		if (!g_Config.OriginLowerLeft) {
 			SetTextAlign( hDC, TA_TOP | TA_LEFT );
 			TextOut( hDC, Border+2,y+2, g_Config.LabelNegX, strlen(g_Config.LabelNegX) );
-		} else {	// Draw the label vertically, outside the axis
-			//RECT r = { 0, 0, 0, 0 };
-			//DrawText(hDC, g_Config.LabelTopLeft, strlen(g_Config.LabelTopLeft), &r, DT_CALCRECT);
-			//int offset = r.right - x/2 + Border;
-			//if (offset<0) offset = 0;
-			//SetTextAlign( hDC, TA_BOTTOM | TA_CENTER );
-			//TextOut( hDC, x/2 + offset,y/2, g_Config.LabelTopLeft, strlen(g_Config.LabelTopLeft) );
 
-			// TODO
+		} else {	// Draw the label vertically, outside the axis, rotated 90 degrees
+			HFONT NegYfont = CreateFont(
+			   0,                         // nHeight
+			   0,                         // nWidth
+			   900,                       // nEscapement
+			   900,                       // nOrientation
+			   FW_NORMAL,                 // nWeight
+			   FALSE,                     // bItalic
+			   FALSE,                     // bUnderline
+			   0,                         // cStrikeOut
+			   ANSI_CHARSET,              // nCharSet
+			   OUT_DEFAULT_PRECIS,        // nOutPrecision
+			   CLIP_DEFAULT_PRECIS,       // nClipPrecision
+			   DEFAULT_QUALITY,           // nQuality
+			   DEFAULT_PITCH | FF_DONTCARE,// nPitchAndFamily
+			   NULL);	                  // lpszFacename 
 
-			/* This draws text vertically, but individual chars are not roated. */
-			TEXTMETRIC tm;
-			if (GetTextMetrics(hDC, &tm) == 0)
-				tm.tmHeight = 13;	// wild guess
-			int xpos = Border / 2;
-			int ypos = y - (strlen(g_Config.LabelNegX) * tm.tmHeight) /2;
-			SetTextAlign( hDC, TA_TOP | TA_CENTER );
-			for (unsigned int i=0; i < strlen(g_Config.LabelNegX); i++)
-				TextOut(hDC, xpos, ypos + tm.tmHeight*i, &g_Config.LabelNegX[i], 1);
+			if (NegYfont != NULL) {
+				HGDIOBJ oldfont = SelectObject(hDC, NegYfont);
+				TEXTMETRIC tm;
+				if (GetTextMetrics(hDC, &tm) == 0)
+					tm.tmHeight = 13;	// wild guess
+				SetTextAlign( hDC, TA_BOTTOM | TA_CENTER );
+				TextOut(hDC, Border / 2 + tm.tmHeight/2, y, g_Config.LabelNegX, strlen(g_Config.LabelNegX));
+
+				// Done with the font.  Delete the font object.
+				if (oldfont != NULL) SelectObject(hDC, oldfont);
+				DeleteObject(NegYfont); 
+
+			} else {
+
+				/* Last resort; this draws text vertically, but individual chars are not rotated. */
+				TEXTMETRIC tm;
+				if (GetTextMetrics(hDC, &tm) == 0)
+					tm.tmHeight = 13;	// wild guess
+				int xpos = Border / 2;
+				int ypos = y - (strlen(g_Config.LabelNegX) * tm.tmHeight) /2;
+				SetTextAlign( hDC, TA_TOP | TA_CENTER );
+				for (unsigned int i=0; i < strlen(g_Config.LabelNegX); i++)
+					TextOut(hDC, xpos, ypos + tm.tmHeight*i, &g_Config.LabelNegX[i], 1);
+			}
 		}
 	}
 	if ( g_Config.LabelPosX[0] != 0 ) {
@@ -1893,19 +1916,42 @@ HRESULT UpdateInputState( HWND hDlg )
 		TextOut( hDC, xsize - Border - 2,y+2, g_Config.LabelPosX, strlen(g_Config.LabelPosX) );
 	}
 	if ( g_Config.LabelNegY[0] != 0 ) {	// axis is flipped
-		int align = TA_CENTER;			// avoid overwriting an axis
-		if (!g_Config.DrawOctants && !g_Config.SuppressY && !g_Config.OriginLowerLeft)
+		int align = TA_LEFT;			// avoid overwriting an axis
+		if (g_Config.DrawOctants || g_Config.SuppressY)
 			align = TA_LEFT;
 		SetTextAlign( hDC, TA_BOTTOM | align );
-		// TODO See http://www.codeproject.com/Articles/740/Simple-text-rotation
+		if (!g_Config.OriginLowerLeft) {	// label goes inside the axis, else below
+			TextOut( hDC, x+2, ysize - Border - 2, g_Config.LabelNegY, strlen(g_Config.LabelNegY) );
+		} else {
+			// Force the same font we used for the negative Y axis, else they're different...
+			HFONT NegYfont = CreateFont(
+			   0,                         // nHeight
+			   0,                         // nWidth
+			   0,                         // nEscapement
+			   0,                         // nOrientation
+			   FW_NORMAL,                 // nWeight
+			   FALSE,                     // bItalic
+			   FALSE,                     // bUnderline
+			   0,                         // cStrikeOut
+			   ANSI_CHARSET,              // nCharSet
+			   OUT_DEFAULT_PRECIS,        // nOutPrecision
+			   CLIP_DEFAULT_PRECIS,       // nClipPrecision
+			   DEFAULT_QUALITY,           // nQuality
+			   DEFAULT_PITCH | FF_DONTCARE,// nPitchAndFamily
+			   NULL);	                  // lpszFacename 
 
-		if (g_Config.OriginLowerLeft) {	// label goes below the axis, else above
+			HGDIOBJ oldfont = NULL;
+			if (NegYfont != NULL)
+				oldfont = SelectObject(hDC, NegYfont);
 			TEXTMETRIC tm;
 			if (GetTextMetrics(hDC, &tm) == 0)
 				tm.tmHeight = 13;	// wild guess
-			TextOut( hDC, x+2, ysize - (Border-tm.tmHeight)/2, g_Config.LabelNegY, strlen(g_Config.LabelNegY) );
-		} else {
-			TextOut( hDC, x+2, ysize - Border - 2, g_Config.LabelNegY, strlen(g_Config.LabelNegY) );
+			SetTextAlign( hDC, TA_BOTTOM | TA_CENTER );
+			TextOut(hDC, x, ysize - (Border-tm.tmHeight)/2, g_Config.LabelNegY, strlen(g_Config.LabelNegY));
+
+			// Done with the font.  Delete the font object.
+			if (oldfont != NULL) SelectObject(hDC, oldfont);
+			if (NegYfont != NULL) DeleteObject(NegYfont); 
 		}
 	}
 	if ( g_Config.LabelPosY[0] != 0 ) {
