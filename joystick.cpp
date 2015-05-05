@@ -1798,11 +1798,13 @@ HRESULT UpdateInputState( HWND hDlg )
     INT         x, y, radius, xsize, ysize;
 	RECT		rctWinSize;
 
+	static const float deg2rad = 0.0174532925f;
+
 	int Border;			// leave some space around the edges
 	if (g_Config.OriginLowerLeft)
 		Border = 25;	// need more room for labels
 	else
-		Border = 15;
+		Border = 4;
 
 	// Get the input's device state
     if( PollJoystick( js ) != S_OK )
@@ -1866,6 +1868,16 @@ HRESULT UpdateInputState( HWND hDlg )
 			SetTextAlign( hDC, TA_TOP | TA_LEFT );
 			TextOut( hDC, Border+2,y+2, g_Config.LabelNegX, strlen(g_Config.LabelNegX) );
 		} else {	// Draw the label vertically, outside the axis
+			//RECT r = { 0, 0, 0, 0 };
+			//DrawText(hDC, g_Config.LabelTopLeft, strlen(g_Config.LabelTopLeft), &r, DT_CALCRECT);
+			//int offset = r.right - x/2 + Border;
+			//if (offset<0) offset = 0;
+			//SetTextAlign( hDC, TA_BOTTOM | TA_CENTER );
+			//TextOut( hDC, x/2 + offset,y/2, g_Config.LabelTopLeft, strlen(g_Config.LabelTopLeft) );
+
+			// TODO
+
+			/* This draws text vertically, but individual chars are not roated. */
 			TEXTMETRIC tm;
 			if (GetTextMetrics(hDC, &tm) == 0)
 				tm.tmHeight = 13;	// wild guess
@@ -1885,6 +1897,8 @@ HRESULT UpdateInputState( HWND hDlg )
 		if (!g_Config.DrawOctants && !g_Config.SuppressY && !g_Config.OriginLowerLeft)
 			align = TA_LEFT;
 		SetTextAlign( hDC, TA_BOTTOM | align );
+		// TODO See http://www.codeproject.com/Articles/740/Simple-text-rotation
+
 		if (g_Config.OriginLowerLeft) {	// label goes below the axis, else above
 			TEXTMETRIC tm;
 			if (GetTextMetrics(hDC, &tm) == 0)
@@ -1949,21 +1963,21 @@ HRESULT UpdateInputState( HWND hDlg )
 	// Draw a grid
 	if (g_Config.GridCount > 0) {
 	    SelectPen(hDC, CreatePen(PS_DOT, 0, RGB(0xA0,0xA0,0xA0)));
-		printf("grid: xsize, ysize = %i,%i, x,y = %i,%i\n", xsize, ysize, x,y);
-		for (int i = 0; i <= g_Config.GridCount+1; i++) {
+		//printf("grid: xsize, ysize = %i,%i, x,y = %i,%i\n", xsize, ysize, x,y);
+		for (int i = 0; i <= g_Config.GridCount; i++) {
 			//int xpos = Border + stepx*i, ypos = Border + stepy*i;
-			int xpos = Border + (xsize - 2*Border) * i / (g_Config.GridCount + 1);
-			int ypos = Border + (ysize - 2*Border) * i / (g_Config.GridCount + 1);
+			int xpos = Border + (xsize - 2*Border) * i / g_Config.GridCount;
+			int ypos = Border + (ysize - 2*Border) * i / g_Config.GridCount;
 			if (abs(xpos-x) == 1)
 				xpos = x;	// avoid rounding error putting this right next to the axis
 			if (abs(ypos-y) == 1)
 				ypos = y;
 			MoveToEx( hDC, Border, ypos, NULL );
 			LineTo(   hDC, xsize - Border, ypos);
-			printf("grid: %4i,%4i -> %4i,%4i    ", Border, ypos, xsize - Border, ypos);
+			//printf("grid: %4i,%4i -> %4i,%4i    ", Border, ypos, xsize - Border, ypos);
 			MoveToEx( hDC, xpos, Border, NULL );
 			LineTo(   hDC, xpos, ysize - Border);
-			printf("grid: %4i,%4i -> %4i,%4i\n", xpos, Border, xpos, ysize - Border);
+			//printf("grid: %4i,%4i -> %4i,%4i\n", xpos, Border, xpos, ysize - Border);
 		}
 	}
 
@@ -1972,9 +1986,9 @@ HRESULT UpdateInputState( HWND hDlg )
 	    SelectPen( hDC, GetStockPen(DC_PEN) );
 		SetDCPenColor( hDC, RGB(0x0f,0x0f,0xff) );
 		static const int TickSize = 10;	// pixels
-		for (int i = 1; i <= g_Config.TickCount; i++) {
-			int xpos = Border + (xsize - 2*Border) * i / (g_Config.TickCount + 1);
-			int ypos = Border + (ysize - 2*Border) * i / (g_Config.TickCount + 1);
+		for (int i = 0; i <= g_Config.TickCount; i++) {
+			int xpos = Border + (xsize - 2*Border) * i / g_Config.TickCount;
+			int ypos = Border + (ysize - 2*Border) * i / g_Config.TickCount;
 			if (abs(xpos-x) == 1)
 				xpos = x;	// avoid rounding error putting this right next to the axis
 			if (abs(ypos-y) == 1)
@@ -2001,7 +2015,6 @@ HRESULT UpdateInputState( HWND hDlg )
     SelectPen( hDC, GetStockPen(DC_PEN) );
 	SetDCPenColor( hDC, RGB(0x0f,0x0f,0xff) );
 	if (g_Config.DrawOctants) {
-		static const float deg2rad = 0.0174532925f;
 		for (int i = 0; i < 8; i++) {
 			float rads = (22.5f + (float)(45*i)) * deg2rad;
 			int x2 = (int)((float)x * cos(rads));
@@ -2038,8 +2051,8 @@ HRESULT UpdateInputState( HWND hDlg )
 		x += MulDiv( xsize - 2*Border, js.lX, 2 * g_Config.XYMinMax );
 		y += MulDiv( ysize - 2*Border, js.lY, 2 * g_Config.XYMinMax );
 	} else {
-		x = MulDiv( xsize - 2*Border, js.lX, g_Config.XYMinMax );
-		y = MulDiv( ysize - 2*Border, js.lY, g_Config.XYMinMax ) + ysize;
+		x = MulDiv( xsize - Border, js.lX, g_Config.XYMinMax );
+		y = MulDiv( ysize - Border, js.lY, g_Config.XYMinMax ) + ysize;
 	}
 	if (x >= xsize - Border) x = xsize - Border;
 	if (x < Border) x = Border;
