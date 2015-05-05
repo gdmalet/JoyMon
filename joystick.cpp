@@ -86,7 +86,7 @@ static bool g_JoystickButton = false, g_Button2 = false;
 static const char g_Version[] = "Version: " __DATE__ ", "  __TIME__;
 
 static struct {
-	bool ShowAxes, ShowFilename, OutputFileBanner, OutputOnlyChanges, RememberWindow, SoundFeedback, SuppressX, SuppressY;
+	bool ShowAxes, ShowFilename, OutputFileBanner, OriginLowerLeft, RememberWindow, SoundFeedback, SuppressX, SuppressY;
 	long EllipseSize, XYMinMax, JoystickButton, Button2, WPosnX, WPosnY, WSizeX, WSizeY;
 	double TicksPerSec;
 	char FilePattern[MAX_PATH];	// Where to put output data. Will add 3 digit extension.
@@ -124,7 +124,7 @@ bool LoadConfig( void )
 	g_Config.ShowAxes = false;
 	g_Config.ShowFilename = true;
 	g_Config.OutputFileBanner = true;
-	g_Config.OutputOnlyChanges = false;
+	g_Config.OriginLowerLeft = false;
 	g_Config.RememberWindow = true;
 	g_Config.EllipseSize = 2;
 	g_Config.XYMinMax = 1000;
@@ -206,12 +206,12 @@ bool LoadConfig( void )
 	reglen = sizeof regvalue;
 	if ( (lResult = RegQueryValueEx(
 		hRegKey,
-		"OutputOnlyChanges",
+		"OriginLowerLeft",
 		0,
 		&dwType,
 		regvalue,
 		&reglen)) == 0 ) {
-			g_Config.OutputOnlyChanges = *((bool*)regvalue);
+			g_Config.OriginLowerLeft = *((bool*)regvalue);
 	}
 
 	reglen = sizeof regvalue;
@@ -500,10 +500,10 @@ bool SaveConfig( void )
 				return false;
 	};
 
-	regvalue = g_Config.OutputOnlyChanges ? 1 : 0;
+	regvalue = g_Config.OriginLowerLeft ? 1 : 0;
 	if ( (lResult = RegSetValueEx(
 			hRegKey,
-			"OutputOnlyChanges",
+			"OriginLowerLeft",
 			0,
 			REG_DWORD,
 			(unsigned char*)&regvalue,
@@ -1023,7 +1023,6 @@ INT_PTR CALLBACK ConfigAboutProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPa
 				default:
 					return FALSE;
 			}
-
 		default:
 			return FALSE;
 	}
@@ -1039,6 +1038,12 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 {
     switch( msg ) 
     {
+		case WM_CLOSE:
+			LoadConfig(); // kill any changes we made
+			EnableWindow( GetWindow( hDlg, GW_OWNER ), TRUE );
+            EndDialog( hDlg, 0 );
+			break;
+
         case WM_INITDIALOG:
 			{
 			    RECT rcParent; 
@@ -1065,9 +1070,9 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 			    if ( g_Config.OutputFileBanner ==  true ) 
 					CheckDlgButton( hDlg, IDC_WRITE_BANNER, BST_CHECKED );
 						else CheckDlgButton( hDlg, IDC_WRITE_BANNER, BST_UNCHECKED );
-			    if ( g_Config.OutputOnlyChanges ==  true ) 
-					CheckDlgButton( hDlg, IDC_CHANGES_ONLY, BST_CHECKED );
-						else CheckDlgButton( hDlg, IDC_CHANGES_ONLY, BST_UNCHECKED );
+			    if ( g_Config.OriginLowerLeft ==  true ) 
+					CheckDlgButton( hDlg, IDC_ORIGIN_LOWERLEFT, BST_CHECKED );
+						else CheckDlgButton( hDlg, IDC_ORIGIN_LOWERLEFT, BST_UNCHECKED );
 			    if ( g_Config.ShowAxes ==  true ) 
 					CheckDlgButton( hDlg, IDC_SHOW_COORDS, BST_CHECKED );
 						else CheckDlgButton( hDlg, IDC_SHOW_COORDS, BST_UNCHECKED );
@@ -1127,8 +1132,8 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 							g_Config.ShowFilename = true; else g_Config.ShowFilename = false;
 						if( IsDlgButtonChecked( hDlg, IDC_WRITE_BANNER ) == BST_CHECKED )
 							g_Config.OutputFileBanner = true; else g_Config.OutputFileBanner = false;
-						if( IsDlgButtonChecked( hDlg, IDC_CHANGES_ONLY ) == BST_CHECKED )
-							g_Config.OutputOnlyChanges = true; else g_Config.OutputOnlyChanges = false;
+						if( IsDlgButtonChecked( hDlg, IDC_ORIGIN_LOWERLEFT ) == BST_CHECKED )
+							g_Config.OriginLowerLeft = true; else g_Config.OriginLowerLeft = false;
 						if( IsDlgButtonChecked( hDlg, IDC_SHOW_COORDS ) == BST_CHECKED )
 							g_Config.ShowAxes = true; else g_Config.ShowAxes = false;
 						if( IsDlgButtonChecked( hDlg, IDC_SOUND_FEEDBACK ) == BST_CHECKED )
@@ -1188,7 +1193,7 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 
 						GetWindowText( GetDlgItem( hDlg, IDC_XYMINMAX ), buf, sizeof buf);
 						if ( atoi(buf) <= 0 ) {
-								MessageBox(hDlg, "Axis magnitude must be greater than zero.", NULL, MB_OK | MB_ICONEXCLAMATION);
+								MessageBox(hDlg, "Axis maximum value must be greater than zero.", NULL, MB_OK | MB_ICONEXCLAMATION);
 								break;
 						}
 						if ( atoi(buf) != g_Config.XYMinMax ) {
@@ -1332,7 +1337,7 @@ bool StartWriting( void )
 				if ( g_Config.OutputFileBanner ) {
 					time_t now = time(NULL);
 					struct tm * nowtm = localtime(&now);
-					if ( fprintf(fp, "# File created at %s# Axes magnitude: %u\n# Ticks / second: %0.1lf\n# %s\n",
+					if ( fprintf(fp, "# File created at %s# Axes maximum value: %u\n# Ticks / second: %0.1lf\n# %s\n",
 							asctime(nowtm), g_Config.XYMinMax, g_Config.TicksPerSec, g_Config.BannerComment ) <= 0 ) {
 						_snprintf(g_MsgText, sizeof g_MsgText, "Error %u writing to output file %s",
 								errno, buf);
@@ -1372,15 +1377,14 @@ bool WriteToFile( void )
     if( FAILED( hr = PollJoystick( js ) ) )
         return false;
 
-	static long oldx = g_Config.XYMinMax + 1, oldy;
-	if ( g_Config.OutputOnlyChanges == true && !g_Button2) {
-		if ( js.lX == oldx && js.lY == oldy )
-			return true;
-		oldx = js.lX, oldy = js.lY;
-	}
-
 	DWORD timernow = GetTickCount();
 	float elapsed = (float)(timernow - g_timerstart) / 1000.0f;
+
+	// Constrain the axes if we're not going negative
+	if (g_Config.OriginLowerLeft == true) {
+		if (js.lX < 0) js.lX = 0;
+		if (js.lY > 0) js.lY = 0;	// will flip the sign below
+	}
 
 	// Report state of extra button if we're watching it.
 	if ( g_Config.Button2 ) {
@@ -1502,11 +1506,10 @@ BOOL CALLBACK EnumObjectsCallback( const DIDEVICEOBJECTINSTANCE* pdidoi,
         diprg.diph.dwObj        = pdidoi->dwType; // Specify the enumerated axis
 		diprg.lMin				= -g_Config.XYMinMax;
 		diprg.lMax              = +g_Config.XYMinMax; 
-    
+
         // Set the range for the axis
         if( FAILED( g_pJoystick->SetProperty( DIPROP_RANGE, &diprg.diph ) ) ) 
             return DIENUM_STOP;
-         
     }
 
     return DIENUM_CONTINUE;
@@ -1669,24 +1672,36 @@ HRESULT UpdateInputState( HWND hDlg )
     // Draw center cross hair
     SelectPen( hDC, GetStockPen(DC_PEN) );
 	SetDCPenColor( hDC, RGB(0x0f,0x0f,0xff) );
-	if (!g_Config.SuppressY) {
-	    MoveToEx( hDC, x, 15, NULL );
-		LineTo(   hDC, x, ysize - 15 );
-	} else {
-	    MoveToEx( hDC, x, y-radius-3, NULL );				// make a teeny bit bigger than the 
-		LineTo(   hDC, x, y+radius+3);						// ellipse cursor.
-	}
-	if (!g_Config.SuppressX) {
-	    MoveToEx( hDC, 0, y, NULL );
-		LineTo(   hDC, xsize, y );
-	} else {
-	    MoveToEx( hDC, x-radius-2, y, NULL );
-		LineTo(   hDC, x+radius+2, y);
+	if (!g_Config.OriginLowerLeft) {
+		if (!g_Config.SuppressY) {
+			MoveToEx( hDC, x, 15, NULL );
+			LineTo(   hDC, x, ysize - 15 );
+		} else {
+			MoveToEx( hDC, x, y-radius-3, NULL );				// make a teeny bit bigger than the 
+			LineTo(   hDC, x, y+radius+3);						// ellipse cursor.
+		}
+		if (!g_Config.SuppressX) {
+			MoveToEx( hDC, 0, y, NULL );
+			LineTo(   hDC, xsize, y );
+		} else {
+			MoveToEx( hDC, x-radius-2, y, NULL );
+			LineTo(   hDC, x+radius+2, y);
+		}
+	} else {	// Origin is in lower left
+		MoveToEx( hDC, 1, 1, NULL );
+		LineTo(   hDC, 1, ysize - 1 );
+		MoveToEx( hDC, 1, ysize - 1, NULL );
+		LineTo(   hDC, xsize - 1, ysize - 1 );
 	}
 
 	// Draw mark, making sure to adjust so we don't erase window edges
-	x += MulDiv( xsize, js.lX, 2 * g_Config.XYMinMax );
-	y += MulDiv( ysize, js.lY, 2 * g_Config.XYMinMax );
+	if (!g_Config.OriginLowerLeft) {
+		x += MulDiv( xsize, js.lX, 2 * g_Config.XYMinMax );
+		y += MulDiv( ysize, js.lY, 2 * g_Config.XYMinMax );
+	} else {
+		x = MulDiv( xsize, js.lX, g_Config.XYMinMax );
+		y = MulDiv( ysize, js.lY, g_Config.XYMinMax ) + ysize;
+	}
 	if ( x >= xsize - radius ) x = xsize - radius - 1;
 	if ( x <= radius -1 ) x = radius + 2;	// keep clear of sunken border
 	if ( y >= ysize - radius ) y = ysize - radius - 1;
