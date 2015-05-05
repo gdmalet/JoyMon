@@ -73,7 +73,7 @@ BEGIN
     LTEXT           "Output file name (3 digits will be appended)",IDC_STATIC,11,12,144,12
     LTEXT           "X and Y axis maximum value",IDC_STATIC,11,107,90,12
     LTEXT           "Pointer radius (% of window size)",IDC_STATIC,11,119,114,12
-    GROUPBOX        "Configuration",IDC_STATIC,6,1,222,306
+    GROUPBOX        "Configuration",IDC_STATIC,6,1,222,316
     LTEXT           "Comment for file banner",IDC_STATIC,11,66,81,8
     LTEXT           "Static",IDC_WINDOW_POSN,30,210,150,8
     LTEXT           "Which joystick button starts/stops writing",IDC_STATIC,11,286,139,8
@@ -92,10 +92,12 @@ BEGIN
     LTEXT           "Bottom left:",IDC_STATIC,27,185,39,8
     LTEXT           "Top right:",IDC_STATIC,141,170,32,8
     LTEXT           "Bottom right:",IDC_STATIC,130,182,43,8
-    EDITTEXT        IDC_TOP_LEFT,77,170,40,14,ES_AUTOHSCROLL
-    EDITTEXT        IDC_TOP_RIGHT,182,170,40,14,ES_AUTOHSCROLL
-    EDITTEXT        IDC_BOTTOM_RIGHT,182,182,40,14,ES_AUTOHSCROLL
-    EDITTEXT        IDC_BOTTOM_LEFT,77,184,40,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_LABEL_TOP_LEFT,77,170,40,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_LABEL_TOP_RIGHT,182,170,40,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_LABEL_BOTTOM_RIGHT,182,182,40,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_LABEL_BOTTOM_LEFT,77,184,40,14,ES_AUTOHSCROLL
+    LTEXT           "Number of grid lines",IDC_STATIC,12,300,64,8
+    EDITTEXT        IDC_GRID_COUNT,186,300,40,14,ES_AUTOHSCROLL | ES_NUMBER
 END
 
 

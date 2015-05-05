@@ -86,11 +86,12 @@ static bool g_JoystickButton = false, g_Button2 = false;
 static const char g_Version[] = "Version: " __DATE__ ", "  __TIME__;
 
 static struct {
-	bool ShowAxes, ShowFilename, OutputFileBanner, OriginLowerLeft, RememberWindow, SoundFeedback, SuppressX, SuppressY;
-	long EllipseSize, XYMinMax, JoystickButton, Button2, WPosnX, WPosnY, WSizeX, WSizeY;
+	bool ShowAxes, ShowFilename, OutputFileBanner, OriginLowerLeft, DrawOctants, RememberWindow, SoundFeedback, SuppressX, SuppressY;
+	long EllipseSize, XYMinMax, JoystickButton, Button2, WPosnX, WPosnY, WSizeX, WSizeY, GridCount;
 	double TicksPerSec;
 	char FilePattern[MAX_PATH];	// Where to put output data. Will add 3 digit extension.
-	char BannerComment[1024], LabelPosX[128], LabelPosY[128], LabelNegX[128], LabelNegY[128];
+	char BannerComment[1024], LabelPosX[128], LabelPosY[128], LabelNegX[128], LabelNegY[128],
+		LabelTopLeft[128], LabelTopRight[128], LabelBottomLeft[128], LabelBottomRight[128];
 } g_Config;
 
 //-----------------------------------------------------------------------------
@@ -125,8 +126,10 @@ bool LoadConfig( void )
 	g_Config.ShowFilename = true;
 	g_Config.OutputFileBanner = true;
 	g_Config.OriginLowerLeft = false;
+	g_Config.DrawOctants = false;
 	g_Config.RememberWindow = true;
 	g_Config.EllipseSize = 2;
+	g_Config.GridCount = 0;
 	g_Config.XYMinMax = 1000;
 	g_Config.TicksPerSec = 2.0;
 	g_Config.JoystickButton = 7;
@@ -148,6 +151,10 @@ bool LoadConfig( void )
 	strncpy(g_Config.LabelNegX, "Unfriendly", sizeof g_Config.LabelNegX);
 	strncpy(g_Config.LabelPosY, "Dominant", sizeof g_Config.LabelPosY);
 	strncpy(g_Config.LabelNegY, "Submissive", sizeof g_Config.LabelNegY);
+	strncpy(g_Config.LabelTopLeft, "", sizeof g_Config.LabelTopLeft);
+	strncpy(g_Config.LabelTopRight, "", sizeof g_Config.LabelTopRight);
+	strncpy(g_Config.LabelBottomRight, "", sizeof g_Config.LabelBottomRight);
+	strncpy(g_Config.LabelBottomLeft, "", sizeof g_Config.LabelBottomLeft);
 
 	// Try read the per-user key. If this fails, there might be an older version of the config
 	// (from a version of this program prior to Sept 2014) under LOCAL_MACHINE, which we try to read
@@ -217,6 +224,17 @@ bool LoadConfig( void )
 	reglen = sizeof regvalue;
 	if ( (lResult = RegQueryValueEx(
 		hRegKey,
+		"DrawOctants",
+		0,
+		&dwType,
+		regvalue,
+		&reglen)) == 0 ) {
+			g_Config.DrawOctants = *((bool*)regvalue);
+	}
+
+	reglen = sizeof regvalue;
+	if ( (lResult = RegQueryValueEx(
+		hRegKey,
 		"RememberWindow",
 		0,
 		&dwType,
@@ -245,6 +263,17 @@ bool LoadConfig( void )
 		regvalue,
 		&reglen)) == 0 ) {
 			g_Config.XYMinMax = *((unsigned long*)regvalue);
+	}
+
+	reglen = sizeof regvalue;
+	if ( (lResult = RegQueryValueEx(
+		hRegKey,
+		"GridCount",
+		0,
+		&dwType,
+		regvalue,
+		&reglen)) == 0 ) {
+			g_Config.GridCount = *((unsigned long*)regvalue);
 	}
 
 	reglen = sizeof regvalue;
@@ -435,6 +464,50 @@ bool LoadConfig( void )
 			g_Config.LabelNegY[ min(reglen, sizeof g_Config.LabelNegY -1) ] = 0;
 	}
 
+	reglen = sizeof g_Config.LabelTopLeft;
+	if ( (lResult = RegQueryValueEx(
+		hRegKey,
+		"LabelTopLeft",
+		0,
+		&dwType,
+		(unsigned char*)&g_Config.LabelTopLeft,
+		&reglen)) == 0 ) {
+			g_Config.LabelTopLeft[ min(reglen, sizeof g_Config.LabelTopLeft -1) ] = 0;
+	}
+
+	reglen = sizeof g_Config.LabelTopRight;
+	if ( (lResult = RegQueryValueEx(
+		hRegKey,
+		"LabelTopRight",
+		0,
+		&dwType,
+		(unsigned char*)&g_Config.LabelTopRight,
+		&reglen)) == 0 ) {
+			g_Config.LabelTopRight[ min(reglen, sizeof g_Config.LabelTopRight -1) ] = 0;
+	}
+
+	reglen = sizeof g_Config.LabelBottomRight;
+	if ( (lResult = RegQueryValueEx(
+		hRegKey,
+		"LabelBottomRight",
+		0,
+		&dwType,
+		(unsigned char*)&g_Config.LabelBottomRight,
+		&reglen)) == 0 ) {
+			g_Config.LabelBottomRight[ min(reglen, sizeof g_Config.LabelBottomRight -1) ] = 0;
+	}
+
+	reglen = sizeof g_Config.LabelBottomLeft;
+	if ( (lResult = RegQueryValueEx(
+		hRegKey,
+		"LabelBottomLeft",
+		0,
+		&dwType,
+		(unsigned char*)&g_Config.LabelBottomLeft,
+		&reglen)) == 0 ) {
+			g_Config.LabelBottomLeft[ min(reglen, sizeof g_Config.LabelBottomLeft -1) ] = 0;
+	}
+
 	RegCloseKey( hRegKey );
 	return true;
 }
@@ -513,6 +586,19 @@ bool SaveConfig( void )
 				return false;
 	};
 
+	regvalue = g_Config.DrawOctants ? 1 : 0;
+	if ( (lResult = RegSetValueEx(
+			hRegKey,
+			"DrawOctants",
+			0,
+			REG_DWORD,
+			(unsigned char*)&regvalue,
+			sizeof regvalue)) != 0 ) {
+				SetLastError( lResult );
+				RegCloseKey( hRegKey );
+				return false;
+	};
+
 	regvalue = g_Config.RememberWindow ? 1 : 0;
 	if ( (lResult = RegSetValueEx(
 			hRegKey,
@@ -545,6 +631,18 @@ bool SaveConfig( void )
 			REG_DWORD,
 			(unsigned char*)&g_Config.XYMinMax,
 			sizeof g_Config.XYMinMax)) != 0 ) {
+				SetLastError( lResult );
+				RegCloseKey( hRegKey );
+				return false;
+	};
+
+	if ( (lResult = RegSetValueEx(
+			hRegKey,
+			"GridCount",
+			0,
+			REG_DWORD,
+			(unsigned char*)&g_Config.GridCount,
+			sizeof g_Config.GridCount)) != 0 ) {
 				SetLastError( lResult );
 				RegCloseKey( hRegKey );
 				return false;
@@ -740,6 +838,54 @@ bool SaveConfig( void )
 			REG_SZ,
 			(unsigned char*)&g_Config.LabelNegY,
 			strlen(g_Config.LabelNegY)+1) ) != 0 ) {
+				SetLastError( lResult );
+				RegCloseKey( hRegKey );
+				return false;
+	};
+
+	if ( (lResult = RegSetValueEx(
+			hRegKey,
+			"LabelTopLeft",
+			0,
+			REG_SZ,
+			(unsigned char*)&g_Config.LabelTopLeft,
+			strlen(g_Config.LabelTopLeft)+1) ) != 0 ) {
+				SetLastError( lResult );
+				RegCloseKey( hRegKey );
+				return false;
+	};
+
+	if ( (lResult = RegSetValueEx(
+			hRegKey,
+			"LabelTopRight",
+			0,
+			REG_SZ,
+			(unsigned char*)&g_Config.LabelTopRight,
+			strlen(g_Config.LabelTopRight)+1) ) != 0 ) {
+				SetLastError( lResult );
+				RegCloseKey( hRegKey );
+				return false;
+	};
+
+	if ( (lResult = RegSetValueEx(
+			hRegKey,
+			"LabelBottomRight",
+			0,
+			REG_SZ,
+			(unsigned char*)&g_Config.LabelBottomRight,
+			strlen(g_Config.LabelBottomRight)+1) ) != 0 ) {
+				SetLastError( lResult );
+				RegCloseKey( hRegKey );
+				return false;
+	};
+
+	if ( (lResult = RegSetValueEx(
+			hRegKey,
+			"LabelBottomLeft",
+			0,
+			REG_SZ,
+			(unsigned char*)&g_Config.LabelBottomLeft,
+			strlen(g_Config.LabelBottomLeft)+1) ) != 0 ) {
 				SetLastError( lResult );
 				RegCloseKey( hRegKey );
 				return false;
@@ -1073,6 +1219,9 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 			    if ( g_Config.OriginLowerLeft ==  true ) 
 					CheckDlgButton( hDlg, IDC_ORIGIN_LOWERLEFT, BST_CHECKED );
 						else CheckDlgButton( hDlg, IDC_ORIGIN_LOWERLEFT, BST_UNCHECKED );
+			    if ( g_Config.DrawOctants ==  true ) 
+					CheckDlgButton( hDlg, IDC_DRAW_OCTANTS, BST_CHECKED );
+						else CheckDlgButton( hDlg, IDC_DRAW_OCTANTS, BST_UNCHECKED );
 			    if ( g_Config.ShowAxes ==  true ) 
 					CheckDlgButton( hDlg, IDC_SHOW_COORDS, BST_CHECKED );
 						else CheckDlgButton( hDlg, IDC_SHOW_COORDS, BST_UNCHECKED );
@@ -1097,6 +1246,8 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 					SetWindowText( GetDlgItem( hDlg, IDC_BUTTON2 ), buf );
 				sprintf(buf, "%u", g_Config.XYMinMax );
 					SetWindowText( GetDlgItem( hDlg, IDC_XYMINMAX ), buf );
+				sprintf(buf, "%u", g_Config.GridCount );
+					SetWindowText( GetDlgItem( hDlg, IDC_GRID_COUNT ), buf );
 				sprintf(buf, "%u", g_Config.EllipseSize );
 					SetWindowText( GetDlgItem( hDlg, IDC_POINTER_SIZE ), buf );
 
@@ -1105,6 +1256,10 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 				SetWindowText( GetDlgItem( hDlg, IDC_LABEL_NEGX ), g_Config.LabelNegX );
 				SetWindowText( GetDlgItem( hDlg, IDC_LABEL_POSY ), g_Config.LabelPosY );
 				SetWindowText( GetDlgItem( hDlg, IDC_LABEL_NEGY ), g_Config.LabelNegY );
+				SetWindowText( GetDlgItem( hDlg, IDC_LABEL_TOP_LEFT ), g_Config.LabelTopLeft );
+				SetWindowText( GetDlgItem( hDlg, IDC_LABEL_TOP_RIGHT ), g_Config.LabelTopRight );
+				SetWindowText( GetDlgItem( hDlg, IDC_LABEL_BOTTOM_RIGHT ), g_Config.LabelBottomRight );
+				SetWindowText( GetDlgItem( hDlg, IDC_LABEL_BOTTOM_LEFT ), g_Config.LabelBottomLeft );
 			}
 	        break;
 
@@ -1134,6 +1289,8 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 							g_Config.OutputFileBanner = true; else g_Config.OutputFileBanner = false;
 						if( IsDlgButtonChecked( hDlg, IDC_ORIGIN_LOWERLEFT ) == BST_CHECKED )
 							g_Config.OriginLowerLeft = true; else g_Config.OriginLowerLeft = false;
+						if( IsDlgButtonChecked( hDlg, IDC_DRAW_OCTANTS ) == BST_CHECKED )
+							g_Config.DrawOctants = true; else g_Config.DrawOctants = false;
 						if( IsDlgButtonChecked( hDlg, IDC_SHOW_COORDS ) == BST_CHECKED )
 							g_Config.ShowAxes = true; else g_Config.ShowAxes = false;
 						if( IsDlgButtonChecked( hDlg, IDC_SOUND_FEEDBACK ) == BST_CHECKED )
@@ -1203,6 +1360,13 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 								g_pJoystick->EnumObjects( EnumObjectsCallback, (VOID*)hDlg, DIDFT_AXIS );
 						}
 
+						GetWindowText( GetDlgItem( hDlg, IDC_GRID_COUNT ), buf, sizeof buf );
+						if ( atoi(buf) < 0 ) {
+								MessageBox(hDlg, "Grid count must be greater than or equal to zero.", NULL, MB_OK | MB_ICONEXCLAMATION);
+								break;
+						}
+						g_Config.GridCount = atoi(buf);
+
 						GetWindowText( GetDlgItem( hDlg, IDC_POINTER_SIZE ), buf, sizeof buf );
 						if ( atoi(buf) <= 0 || atoi(buf) > 50 ) {
 								MessageBox(hDlg, "Pointer size (the radius) must be between 1 and 50 inclusive.", NULL, MB_OK | MB_ICONEXCLAMATION);
@@ -1215,6 +1379,10 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 						GetWindowText( GetDlgItem( hDlg, IDC_LABEL_NEGX ), g_Config.LabelNegX, sizeof g_Config.LabelNegX );
 						GetWindowText( GetDlgItem( hDlg, IDC_LABEL_POSY ), g_Config.LabelPosY, sizeof g_Config.LabelPosY );
 						GetWindowText( GetDlgItem( hDlg, IDC_LABEL_NEGY ), g_Config.LabelNegY, sizeof g_Config.LabelNegY );
+						GetWindowText( GetDlgItem( hDlg, IDC_LABEL_TOP_LEFT ), g_Config.LabelTopLeft, sizeof g_Config.LabelTopLeft );
+						GetWindowText( GetDlgItem( hDlg, IDC_LABEL_TOP_RIGHT ), g_Config.LabelTopRight, sizeof g_Config.LabelTopRight );
+						GetWindowText( GetDlgItem( hDlg, IDC_LABEL_BOTTOM_RIGHT ), g_Config.LabelBottomRight, sizeof g_Config.LabelBottomRight );
+						GetWindowText( GetDlgItem( hDlg, IDC_LABEL_BOTTOM_LEFT ), g_Config.LabelBottomLeft, sizeof g_Config.LabelBottomLeft );
 
 						if ( g_Config.RememberWindow ) {
 						    RECT rcParent; 
@@ -1659,6 +1827,42 @@ HRESULT UpdateInputState( HWND hDlg )
 		SetTextAlign( hDC, TA_TOP | TA_CENTER );
 		TextOut( hDC, x,2, g_Config.LabelPosY, strlen(g_Config.LabelPosY) );
 	}
+
+	// Need to measure string output sizes to avoid truncation at the edge of the screen
+	// TODO messy, repetitive
+	static int Border = 15;	// leave some space around the edges
+	if ( g_Config.LabelTopLeft[0] != 0 ) {
+		RECT r = { 0, 0, 0, 0 };
+		DrawText(hDC, g_Config.LabelTopLeft, strlen(g_Config.LabelTopLeft), &r, DT_CALCRECT);
+		int offset = r.right - x/2 + Border;
+		if (offset<0) offset = 0;
+		SetTextAlign( hDC, TA_BOTTOM | TA_RIGHT );
+		TextOut( hDC, x/2 + offset,y/2, g_Config.LabelTopLeft, strlen(g_Config.LabelTopLeft) );
+	}
+	if ( g_Config.LabelTopRight[0] != 0 ) {
+		RECT r = { 0, 0, 0, 0 };
+		DrawText(hDC, g_Config.LabelTopRight, strlen(g_Config.LabelTopRight), &r, DT_CALCRECT);
+		int offset = r.right - x/2 + Border;
+		if (offset<0) offset = 0;
+		SetTextAlign( hDC, TA_BOTTOM | TA_LEFT );
+		TextOut( hDC, x+x-x/2 - offset,y/2, g_Config.LabelTopRight, strlen(g_Config.LabelTopRight) );
+	}
+	if ( g_Config.LabelBottomRight[0] != 0 ) {
+		RECT r = { 0, 0, 0, 0 };
+		DrawText(hDC, g_Config.LabelBottomRight, strlen(g_Config.LabelBottomRight), &r, DT_CALCRECT);
+		int offset = r.right - x/2 + Border;
+		if (offset<0) offset = 0;
+		SetTextAlign( hDC, TA_TOP | TA_LEFT );
+		TextOut( hDC, x+x-x/2 - offset,y+y-y/2, g_Config.LabelBottomRight, strlen(g_Config.LabelBottomRight) );
+	}
+	if ( g_Config.LabelBottomLeft[0] != 0 ) {
+		RECT r = { 0, 0, 0, 0 };
+		DrawText(hDC, g_Config.LabelBottomLeft, strlen(g_Config.LabelBottomLeft), &r, DT_CALCRECT);
+		int offset = r.right - x/2 + Border;
+		if (offset<0) offset = 0;
+		SetTextAlign( hDC, TA_TOP | TA_RIGHT );
+		TextOut( hDC, x/2 + offset,y+y-y/2, g_Config.LabelBottomLeft, strlen(g_Config.LabelBottomLeft) );
+	}
 	SetTextAlign( hDC, oldalign );
 
 	// Display any msgs
@@ -1669,44 +1873,76 @@ HRESULT UpdateInputState( HWND hDlg )
 	SelectBrush( hDC, GetStockBrush(WHITE_BRUSH) );
 	Ellipse( hDC, oldx-radius, oldy-radius, oldx+radius, oldy+radius );
 	
+	// Draw a grid
+	if (g_Config.GridCount > 0) {
+	    SelectPen(hDC, CreatePen(PS_DOT, 0, RGB(0xE0,0xE0,0xE0)));
+		int stepx = (xsize - 2*Border) / (g_Config.GridCount + 1);
+		int stepy = (ysize - 2*Border) / (g_Config.GridCount + 1);
+		for (int i = 1; i <= g_Config.GridCount; i++) {
+			MoveToEx( hDC, Border, Border + stepy*i, NULL );
+			LineTo(   hDC, xsize - Border, Border + stepy*i);
+			MoveToEx( hDC, Border + stepx*i, Border, NULL );
+			LineTo(   hDC, Border + stepx*i, ysize - Border);
+		}
+	}
+
     // Draw center cross hair
     SelectPen( hDC, GetStockPen(DC_PEN) );
 	SetDCPenColor( hDC, RGB(0x0f,0x0f,0xff) );
-	if (!g_Config.OriginLowerLeft) {
+	if (g_Config.DrawOctants) {
+		int x1, y1, x2, y2, xmagn, ymagn;
+		if (g_Config.OriginLowerLeft) {
+			x1 = Border, y1 = ysize - Border;
+			xmagn = xsize, ymagn = ysize;
+		} else {
+			x1 = x, y1 = y;
+			xmagn = x, ymagn = y;
+		}
+		float deg2rad = 0.0174532925;
+		for (int i = 0; i < 8; i++) {
+			float rads = (22.5 + 45.0*i) * deg2rad;
+			x2 = x * cos(rads);
+			y2 = y * sin(rads);
+			MoveToEx( hDC, x1, y1, NULL );
+			LineTo(   hDC, x1+x2, y1+y2 );
+		}
+
+	} else if (g_Config.OriginLowerLeft) {
+		MoveToEx( hDC, Border, Border, NULL );
+		LineTo(   hDC, Border, ysize - Border );
+		//MoveToEx( hDC, Border, ysize - Border, NULL );
+		LineTo(   hDC, xsize - Border, ysize - Border );
+
+	} else {	// Standard X,Y axes, centred on screen
 		if (!g_Config.SuppressY) {
-			MoveToEx( hDC, x, 15, NULL );
-			LineTo(   hDC, x, ysize - 15 );
+			MoveToEx( hDC, x, Border, NULL );
+			LineTo(   hDC, x, ysize - Border );
 		} else {
 			MoveToEx( hDC, x, y-radius-3, NULL );				// make a teeny bit bigger than the 
 			LineTo(   hDC, x, y+radius+3);						// ellipse cursor.
 		}
 		if (!g_Config.SuppressX) {
-			MoveToEx( hDC, 0, y, NULL );
-			LineTo(   hDC, xsize, y );
+			MoveToEx( hDC, Border, y, NULL );
+			LineTo(   hDC, xsize - Border, y );
 		} else {
 			MoveToEx( hDC, x-radius-2, y, NULL );
 			LineTo(   hDC, x+radius+2, y);
 		}
-	} else {	// Origin is in lower left
-		MoveToEx( hDC, 1, 1, NULL );
-		LineTo(   hDC, 1, ysize - 1 );
-		MoveToEx( hDC, 1, ysize - 1, NULL );
-		LineTo(   hDC, xsize - 1, ysize - 1 );
 	}
 
 	// Draw mark, making sure to adjust so we don't erase window edges
 	if (!g_Config.OriginLowerLeft) {
-		x += MulDiv( xsize, js.lX, 2 * g_Config.XYMinMax );
-		y += MulDiv( ysize, js.lY, 2 * g_Config.XYMinMax );
+		x += MulDiv( xsize - 2*Border, js.lX, 2 * g_Config.XYMinMax );
+		y += MulDiv( ysize - 2*Border, js.lY, 2 * g_Config.XYMinMax );
 	} else {
-		x = MulDiv( xsize, js.lX, g_Config.XYMinMax );
-		y = MulDiv( ysize, js.lY, g_Config.XYMinMax ) + ysize;
+		x = MulDiv( xsize - 2*Border, js.lX, g_Config.XYMinMax );
+		y = MulDiv( ysize - 2*Border, js.lY, g_Config.XYMinMax ) + ysize;
 	}
-	if ( x >= xsize - radius ) x = xsize - radius - 1;
-	if ( x <= radius -1 ) x = radius + 2;	// keep clear of sunken border
-	if ( y >= ysize - radius ) y = ysize - radius - 1;
-	if ( y <= radius - 1 ) y = radius + 2;	// ditto
-
+	if (x >= xsize - Border) x = xsize - Border;
+	if (x < Border) x = Border;
+	if (y > ysize - Border ) y = ysize - Border;
+	if (y < Border) y = Border;
+	
 	// Save so we can erase on the next pass
 	oldx = x, oldy = y;
 

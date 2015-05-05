@@ -550,7 +550,7 @@
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\..\..\..\Program Files\Microsoft DirectX SDK (March 2009)\Samples\Media\misc\directx.ico" />
+    <None Include="..\..\..\..\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Samples\Media\misc\directx.ico" />
     <None Include="readme.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
