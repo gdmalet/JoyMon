@@ -1828,11 +1828,11 @@ HRESULT UpdateInputState( HWND hDlg )
 	if (g_Config.OriginLowerLeft) {
 		BorderX = BorderY = 25;			// need more room for labels
 	} else {
-		BorderX = 4;
 		TEXTMETRIC tm;
 		if (GetTextMetrics(hDC, &tm) == 0)
 			tm.tmHeight = 13;			// wild guess
-			BorderY = tm.tmHeight + 2;	// Just enough room to write labels outside the border.
+		BorderY = tm.tmHeight;			// Just enough room to write labels outside the border.
+		BorderX = 4;					// Fixed narrow X border
 	}
 
 	// Use system font for all output text.
@@ -1883,7 +1883,7 @@ HRESULT UpdateInputState( HWND hDlg )
 			   FALSE,                     // bItalic
 			   FALSE,                     // bUnderline
 			   0,                         // cStrikeOut
-			   DEFAULT_CHARSET,              // nCharSet
+			   DEFAULT_CHARSET,           // nCharSet
 			   OUT_DEFAULT_PRECIS,        // nOutPrecision
 			   CLIP_DEFAULT_PRECIS,       // nClipPrecision
 			   DEFAULT_QUALITY,           // nQuality
@@ -1935,7 +1935,7 @@ HRESULT UpdateInputState( HWND hDlg )
 			   FALSE,                     // bItalic
 			   FALSE,                     // bUnderline
 			   0,                         // cStrikeOut
-			   ANSI_CHARSET,              // nCharSet
+			   DEFAULT_CHARSET,           // nCharSet
 			   OUT_DEFAULT_PRECIS,        // nOutPrecision
 			   CLIP_DEFAULT_PRECIS,       // nClipPrecision
 			   DEFAULT_QUALITY,           // nQuality
@@ -2060,13 +2060,25 @@ HRESULT UpdateInputState( HWND hDlg )
     SelectPen( hDC, GetStockPen(DC_PEN) );
 	SetDCPenColor( hDC, RGB(0x0f,0x0f,0xff) );
 	if (g_Config.DrawOctants) {
+		// Will use a big hypoteneuse to make sure lines are long enough,
+		// then clip the output to the edges of our drawing area.
+		HRGN newRegn = CreateRectRgn(BorderX, BorderY, xsize-BorderX, ysize-BorderY),
+			oldRegn = CreateRectRgn(0,0,0,0);
+		GetClipRgn(hDC, oldRegn);
+		SelectClipRgn(hDC, newRegn);
+
 		for (int i = 0; i < 8; i++) {
 			float rads = (22.5f + (float)(45*i)) * deg2rad;
-			int x2 = (int)((float)x * cos(rads));
-			int y2 = (int)((float)y * sin(rads));
+			int x2 = (int)((float)xsize * cos(rads));
+			int y2 = (int)((float)ysize * sin(rads));
 			MoveToEx( hDC, x, y, NULL );
 			LineTo(   hDC, x+x2, y+y2 );
 		}
+
+		// Restore the clipping region to the old value
+		SelectClipRgn(hDC, oldRegn);
+		if (oldRegn != NULL) DeleteObject(oldRegn);
+		if (newRegn != NULL) DeleteObject(newRegn);
 
 	} else if (g_Config.OriginLowerLeft) {
 		MoveToEx( hDC, BorderX, BorderY, NULL );
