@@ -2064,7 +2064,7 @@ HRESULT UpdateInputState( HWND hDlg )
 		// then clip the output to the edges of our drawing area.
 		HRGN newRegn = CreateRectRgn(BorderX, BorderY, xsize-BorderX, ysize-BorderY),
 			oldRegn = CreateRectRgn(0,0,0,0);
-		GetClipRgn(hDC, oldRegn);
+		int wasClipped = GetClipRgn(hDC, oldRegn);
 		SelectClipRgn(hDC, newRegn);
 
 		for (int i = 0; i < 8; i++) {
@@ -2076,7 +2076,8 @@ HRESULT UpdateInputState( HWND hDlg )
 		}
 
 		// Restore the clipping region to the old value
-		SelectClipRgn(hDC, oldRegn);
+		if (wasClipped) SelectClipRgn(hDC, oldRegn);
+		else SelectClipRgn(hDC, NULL);
 		if (oldRegn != NULL) DeleteObject(oldRegn);
 		if (newRegn != NULL) DeleteObject(newRegn);
 
