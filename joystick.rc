@@ -44,62 +44,62 @@ CAPTION "Joystick Monitor -- Configuration"
 FONT 8, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
     EDITTEXT        IDC_FILENAME,11,24,211,12,ES_AUTOHSCROLL,WS_EX_ACCEPTFILES
+    GROUPBOX        "Configuration",IDC_STATIC,6,1,222,316
     CONTROL         "Write a banner at start of file                      ",IDC_WRITE_BANNER,
                     "Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | WS_TABSTOP,11,54,211,10
     EDITTEXT        IDC_BANNER_COMMENT,11,78,211,12,ES_AUTOHSCROLL
     EDITTEXT        IDC_SAMPLES_PER_SEC,198,92,24,12,ES_RIGHT,WS_EX_RIGHT
     EDITTEXT        IDC_JOYSTICK_BUTTON,198,286,24,12,ES_RIGHT | ES_NUMBER
     EDITTEXT        IDC_XYMINMAX,198,105,24,12,ES_RIGHT | ES_NUMBER,WS_EX_RIGHT
-    EDITTEXT        IDC_POINTER_SIZE,198,117,24,12,ES_RIGHT | ES_NUMBER,WS_EX_RIGHT
-    EDITTEXT        IDC_LABEL_NEGX,77,146,42,12,ES_AUTOHSCROLL
-    EDITTEXT        IDC_LABEL_POSX,180,145,42,12,ES_AUTOHSCROLL,WS_EX_RIGHT
-    EDITTEXT        IDC_LABEL_NEGY,77,158,42,12,ES_AUTOHSCROLL
-    EDITTEXT        IDC_LABEL_POSY,180,158,42,12,ES_AUTOHSCROLL,WS_EX_RIGHT
+    EDITTEXT        IDC_POINTER_SIZE,180,117,42,12,ES_RIGHT | ES_NUMBER,WS_EX_RIGHT
+    EDITTEXT        IDC_LABEL_NEGX,78,133,42,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_LABEL_POSX,180,132,42,12,ES_AUTOHSCROLL,WS_EX_RIGHT
+    EDITTEXT        IDC_LABEL_NEGY,78,145,42,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_LABEL_POSY,180,145,42,12,ES_AUTOHSCROLL,WS_EX_RIGHT
     EDITTEXT        IDC_BUTTON2,198,245,24,12,ES_RIGHT | ES_NUMBER,WS_EX_RIGHT
     CONTROL         "Provide sound when status button pressed",IDC_SOUND_FEEDBACK,
-                    "Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | WS_TABSTOP,30,260,192,10
+                    "Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | WS_TABSTOP,11,260,211,10
     CONTROL         "Show file name in status line                       ",IDC_SHOW_NAME,
                     "Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | WS_TABSTOP,11,42,211,10
     CONTROL         "Remember the current main window geometry",IDC_REMEMBER_WINDOW,
-                    "Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | BS_NOTIFY | WS_TABSTOP,11,198,211,10
+                    "Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | BS_NOTIFY | WS_TABSTOP,11,185,211,10
     CONTROL         "Origin is in lower left (else centred)                          ",IDC_ORIGIN_LOWERLEFT,
-                    "Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | WS_TABSTOP,10,132,212,10
+                    "Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | WS_TABSTOP,11,207,211,10
     CONTROL         "Show pointer coordinates (button 2 toggles) ",IDC_SHOW_COORDS,
                     "Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | WS_TABSTOP,11,273,211,10
     DEFPUSHBUTTON   "&Save",IDC_CONFIG_OK,175,321,47,14
     PUSHBUTTON      "&Cancel",IDC_CONFIG_CANCEL,98,321,50,14
     PUSHBUTTON      "&About",IDC_CONFIG_ABOUT,6,321,50,14
-    LTEXT           "How many samples to write per second",IDC_STATIC,12,96,138,12
+    LTEXT           "How many samples to write per second",IDC_STATIC,11,96,156,12
     LTEXT           "Output file name (3 digits will be appended)",IDC_STATIC,11,12,144,12
-    LTEXT           "X and Y axis maximum value",IDC_STATIC,11,107,90,12
+    LTEXT           "X and Y axis maximum value",IDC_STATIC,11,107,161,12
     LTEXT           "Pointer radius (% of window size)",IDC_STATIC,11,119,114,12
-    GROUPBOX        "Configuration",IDC_STATIC,6,1,222,316
     LTEXT           "Comment for file banner",IDC_STATIC,11,66,81,8
-    LTEXT           "Static",IDC_WINDOW_POSN,30,210,150,8
     LTEXT           "Which joystick button starts/stops writing",IDC_STATIC,11,286,139,8
-    LTEXT           "Label for axis  -X:",IDC_STATIC,11,146,66,12
-    LTEXT           "X:",IDC_STATIC,165,147,8,8
-    LTEXT           "Y:",IDC_STATIC,165,159,8,8
+    LTEXT           "Label for axis  -X:",IDC_STATIC,11,133,66,12
+    LTEXT           "X:",IDC_STATIC,166,134,8,8
+    LTEXT           "Y:",IDC_STATIC,166,147,8,8
     LTEXT           "Report status of which button (zero for none)",IDC_STATIC,11,250,148,8
-    LTEXT           "-Y:",IDC_STATIC,57,159,11,8
+    LTEXT           "-Y:",IDC_STATIC,58,147,11,8
     CONTROL         "None",IDC_SUPPRESS_NONE,"Button",BS_AUTORADIOBUTTON | BS_LEFTTEXT,76,234,29,10
     CONTROL         "Y axis",IDC_SUPPRESS_Y,"Button",BS_AUTORADIOBUTTON | BS_LEFTTEXT,190,234,32,10
     GROUPBOX        "",IDC_STATIC,113,228,109,19,NOT WS_VISIBLE
     CONTROL         "X axis",IDC_SUPPRESS_X,"Button",BS_AUTORADIOBUTTON | BS_LEFTTEXT,141,234,32,10
     LTEXT           "Suppress",IDC_STATIC,11,234,30,8
     CONTROL         "Draw octants",IDC_DRAW_OCTANTS,"Button",BS_AUTOCHECKBOX | BS_LEFTTEXT | WS_TABSTOP,11,220,211,10
-    LTEXT           "Top left:",IDC_STATIC,39,174,28,8
-    LTEXT           "Bottom left:",IDC_STATIC,27,185,39,8
-    LTEXT           "Top right:",IDC_STATIC,141,170,32,8
-    LTEXT           "Bottom right:",IDC_STATIC,130,182,43,8
-    EDITTEXT        IDC_LABEL_TOP_LEFT,77,170,40,14,ES_AUTOHSCROLL
-    EDITTEXT        IDC_LABEL_TOP_RIGHT,180,170,42,14,ES_AUTOHSCROLL
-    EDITTEXT        IDC_LABEL_BOTTOM_RIGHT,180,182,42,14,ES_AUTOHSCROLL
-    EDITTEXT        IDC_LABEL_BOTTOM_LEFT,77,184,40,14,ES_AUTOHSCROLL
-    LTEXT           "Number of:    Axis tick marks",IDC_STATIC,11,303,92,8
-    EDITTEXT        IDC_GRID_COUNT,186,300,40,14,ES_AUTOHSCROLL | ES_NUMBER,WS_EX_RIGHT
-    EDITTEXT        IDC_TICK_COUNT,108,300,40,14,ES_AUTOHSCROLL | ES_NUMBER,WS_EX_RIGHT
-    LTEXT           "Grid lines",IDC_STATIC,153,303,30,8
+    LTEXT           "Top left:",IDC_STATIC,11,161,28,8
+    LTEXT           "Bottom left:",IDC_STATIC,11,172,39,8
+    LTEXT           "Top right:",IDC_STATIC,142,157,32,8
+    LTEXT           "Bottom right:",IDC_STATIC,131,169,43,8
+    EDITTEXT        IDC_LABEL_TOP_LEFT,78,157,42,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_LABEL_TOP_RIGHT,180,157,42,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_LABEL_BOTTOM_RIGHT,180,169,42,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_LABEL_BOTTOM_LEFT,78,171,42,14,ES_AUTOHSCROLL
+    LTEXT           "Number of:  Axis ticks marks",IDC_STATIC,11,303,121,8
+    EDITTEXT        IDC_GRID_COUNT,182,300,40,14,ES_AUTOHSCROLL | ES_NUMBER,WS_EX_RIGHT
+    EDITTEXT        IDC_TICK_COUNT,104,300,40,14,ES_AUTOHSCROLL | ES_NUMBER,WS_EX_RIGHT
+    LTEXT           "Grid lines",IDC_STATIC,149,303,30,8
+    LTEXT           "Static",IDC_WINDOW_POSN,40,196,150,8
 END
 
 

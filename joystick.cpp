@@ -1336,6 +1336,11 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 								break;
 						}
 
+						if (g_Config.DrawOctants && (g_Config.SuppressX || g_Config.SuppressY)) {
+								MessageBox(hDlg, "Cannot suppress axes when drawing octants.", NULL, MB_OK | MB_ICONEXCLAMATION);
+								break;
+						}
+
 						GetWindowText( GetDlgItem( hDlg, IDC_SAMPLES_PER_SEC ), buf, sizeof buf );
 						errno = 0;
 						if ( atof(buf) <= 0 || errno != 0 ) {
