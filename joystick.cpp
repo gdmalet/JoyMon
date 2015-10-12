@@ -84,6 +84,7 @@ char g_MsgText[512];
 static bool g_JoystickButton = false, g_Button2 = false;
 
 static const char g_Version[] = "Version: " __DATE__ ", "  __TIME__;
+static const char Title[] = "Joystick Monitor";
 
 static struct {
 	bool ShowAxes, ShowFilename, OutputFileBanner, OriginLowerLeft, DrawOctants, RememberWindow, SoundFeedback, SuppressX, SuppressY;
@@ -931,16 +932,14 @@ INT_PTR CALLBACK MainDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam 
 
 			if ( !LoadConfig() ) {
 				MessageBox( NULL, TEXT("Problems reading the config from the registry. ") \
-                    TEXT("Restored config may be incomplete."), TEXT("Joystick Monitor"), 
-					MB_ICONERROR | MB_OK );
+                    TEXT("Restored config may be incomplete."), Title, MB_ICONERROR | MB_OK );
 			} else {
 				_snprintf( g_MsgText, sizeof g_MsgText, "Click button %u to start", g_Config.JoystickButton );
 			}
 
 			if( FAILED( InitDirectInput( hDlg ) ) )
             {
-                MessageBox( NULL, TEXT("Error Initializing DirectInput"), 
-                            TEXT("Joystick Monitor"), MB_ICONERROR | MB_OK );
+                MessageBox( NULL, TEXT("Error Initializing DirectInput"), Title, MB_ICONERROR | MB_OK );
                 EndDialog( hDlg, 0 );
 				break;
 			}
@@ -980,7 +979,7 @@ INT_PTR CALLBACK MainDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam 
             if( FAILED( UpdateInputState( hDlg ) ) )
             {
                 MessageBox( NULL, TEXT("Error Reading Input State. ") \
-                            TEXT("The monitor will now exit."), TEXT("Joystick Monitor"), 
+                            TEXT("The monitor will now exit."), Title, 
                             MB_ICONERROR | MB_OK );
                 EndDialog( hDlg, TRUE ); 
             }
@@ -989,7 +988,7 @@ INT_PTR CALLBACK MainDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam 
 			if ( g_bWriting && g_bWriteError )
 			{
                 MessageBox( NULL, TEXT("Error Writing Output File. ") \
-                            TEXT("The monitor will now exit."), TEXT("Joystick Monitor"), 
+                            TEXT("The monitor will now exit."), Title, 
                             MB_ICONERROR | MB_OK );
                 EndDialog( hDlg, TRUE ); 
             }
@@ -1107,7 +1106,7 @@ void CheckJoystickButton( HWND hDlg )
 					strcat(errbuf, "000': ");
 					size_t errstartlen = strlen(errbuf);
 					strerror_s(&errbuf[errstartlen], sizeof errbuf - errstartlen, errno);
-					MessageBox( NULL, errbuf, TEXT("Joystick Monitor"), MB_ICONERROR | MB_OK );
+					MessageBox( NULL, errbuf, Title, MB_ICONERROR | MB_OK );
 //					EndDialog( hDlg, TRUE ); 
 
 				} else {
@@ -1327,24 +1326,24 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 							g_Config.SuppressY = true; else g_Config.SuppressY = false;
 
 						if (g_Config.DrawOctants && g_Config.OriginLowerLeft ) {
-								MessageBox(hDlg, "Cannot draw octants with the origin in the lower left.", NULL, MB_OK | MB_ICONEXCLAMATION);
+								MessageBox(hDlg, "Cannot draw octants with the origin in the lower left.", Title, MB_OK | MB_ICONEXCLAMATION);
 								break;
 						}
 
 						if (g_Config.OriginLowerLeft && (g_Config.SuppressX || g_Config.SuppressY)) {
-								MessageBox(hDlg, "Cannot suppress axes with the origin in the lower left.", NULL, MB_OK | MB_ICONEXCLAMATION);
+								MessageBox(hDlg, "Cannot suppress axes with the origin in the lower left.", Title, MB_OK | MB_ICONEXCLAMATION);
 								break;
 						}
 
 						if (g_Config.DrawOctants && (g_Config.SuppressX || g_Config.SuppressY)) {
-								MessageBox(hDlg, "Cannot suppress axes when drawing octants.", NULL, MB_OK | MB_ICONEXCLAMATION);
+								MessageBox(hDlg, "Cannot suppress axes when drawing octants.", Title, MB_OK | MB_ICONEXCLAMATION);
 								break;
 						}
 
 						GetWindowText( GetDlgItem( hDlg, IDC_SAMPLES_PER_SEC ), buf, sizeof buf );
 						errno = 0;
 						if ( atof(buf) <= 0 || errno != 0 ) {
-								MessageBox(hDlg, "Ticks per second must be a floating point number greater than zero.", NULL, MB_OK | MB_ICONEXCLAMATION);
+								MessageBox(hDlg, "Ticks per second must be a floating point number greater than zero.", Title, MB_OK | MB_ICONEXCLAMATION);
 								break;
 						}
 
@@ -1354,7 +1353,7 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 							millisecs = 1000 / USER_TIMER_MINIMUM;
 							char text[128];
 							_snprintf(text, sizeof text, "Warning: Your clock cannot exceed %lu ticks per second.", millisecs);
-							MessageBox(hDlg, text, "Warning", MB_OK | MB_ICONWARNING);
+							MessageBox(hDlg, text, Title, MB_OK | MB_ICONWARNING);
 							g_Config.TicksPerSec = 1000.0 / USER_TIMER_MINIMUM;
 						}
 
@@ -1368,7 +1367,7 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 						if ( atoi(buf) < 1 || (unsigned)atoi(buf) > dc.dwButtons ) {
 							char text[128];
 							_snprintf(text, sizeof text, "Joystick button to start & stop writing must be between 1 and %lu inclusive", dc.dwButtons );
-							MessageBox(hDlg, text, NULL, MB_OK | MB_ICONEXCLAMATION);
+							MessageBox(hDlg, text, Title, MB_OK | MB_ICONEXCLAMATION);
 							break;
 						}
 						g_Config.JoystickButton = atoi(buf);
@@ -1379,19 +1378,19 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 						if ( atoi(buf) < 0 || (unsigned)atoi(buf) > dc.dwButtons ) {
 							char text[128];
 							_snprintf(text, sizeof text, "Joystick button to monitor must be between 1 and %lu inclusive", dc.dwButtons );
-							MessageBox(hDlg, text, NULL, MB_OK | MB_ICONEXCLAMATION);
+							MessageBox(hDlg, text, Title, MB_OK | MB_ICONEXCLAMATION);
 							break;
 						}
 						g_Config.Button2 = atoi(buf);
 
 						if ( g_Config.JoystickButton == g_Config.Button2 ) {
-							MessageBox(hDlg, "The button to start & stop writing cannot be the same as the button to monitor", NULL, MB_OK | MB_ICONEXCLAMATION);
+							MessageBox(hDlg, "The button to start & stop writing cannot be the same as the button to monitor", Title, MB_OK | MB_ICONEXCLAMATION);
 							break;
 						}
 
 						GetWindowText( GetDlgItem( hDlg, IDC_XYMINMAX ), buf, sizeof buf);
 						if ( atoi(buf) <= 0 ) {
-								MessageBox(hDlg, "Axis maximum value must be greater than zero.", NULL, MB_OK | MB_ICONEXCLAMATION);
+								MessageBox(hDlg, "Axis maximum value must be greater than zero.", Title, MB_OK | MB_ICONEXCLAMATION);
 								break;
 						}
 						if ( atoi(buf) != g_Config.XYMinMax ) {
@@ -1403,21 +1402,21 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 
 						GetWindowText( GetDlgItem( hDlg, IDC_GRID_COUNT ), buf, sizeof buf );
 						if ( atoi(buf) < 0 ) {
-								MessageBox(hDlg, "Grid count must be greater than or equal to zero.", NULL, MB_OK | MB_ICONEXCLAMATION);
+								MessageBox(hDlg, "Grid count must be greater than or equal to zero.", Title, MB_OK | MB_ICONEXCLAMATION);
 								break;
 						}
 						g_Config.GridCount = atoi(buf);
 
 						GetWindowText( GetDlgItem( hDlg, IDC_TICK_COUNT ), buf, sizeof buf );
 						if ( atoi(buf) < 0 ) {
-								MessageBox(hDlg, "Tick count must be greater than or equal to zero.", NULL, MB_OK | MB_ICONEXCLAMATION);
+								MessageBox(hDlg, "Tick count must be greater than or equal to zero.", Title, MB_OK | MB_ICONEXCLAMATION);
 								break;
 						}
 						g_Config.TickCount = atoi(buf);
 
 						GetWindowText( GetDlgItem( hDlg, IDC_POINTER_SIZE ), buf, sizeof buf );
 						if ( atoi(buf) <= 0 || atoi(buf) > 50 ) {
-								MessageBox(hDlg, "Pointer size (the radius) must be between 1 and 50 inclusive.", NULL, MB_OK | MB_ICONEXCLAMATION);
+								MessageBox(hDlg, "Pointer size (the radius) must be between 1 and 50 inclusive.", Title, MB_OK | MB_ICONEXCLAMATION);
 								break;
 						}
 						g_Config.EllipseSize = atoi(buf);
@@ -1444,8 +1443,7 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
 
 						if ( !SaveConfig() ) {
 							MessageBox( NULL, TEXT("Problems writing config to the registry. (You may need to run this program with Administrator rights.) ") \
-			                    TEXT("Saved config may be incomplete."), TEXT("Joystick Monitor"), 
-				                MB_ICONERROR | MB_OK );
+			                    TEXT("Saved config may be incomplete."), Title, MB_ICONERROR | MB_OK );
 						}
 
 						// TODO - if config changes something on screen, it's not redrawing properly
@@ -1638,8 +1636,7 @@ HRESULT InitDirectInput( HWND hDlg )
     if( NULL == g_pJoystick )
     {
         MessageBox( NULL, TEXT("Joystick not found.\nThings will go downhill from here...."),  
-                    TEXT("Joystick Monitor"), 
-                    MB_ICONERROR | MB_OK );
+                    Title, MB_ICONERROR | MB_OK );
         return S_OK;
     }
 
