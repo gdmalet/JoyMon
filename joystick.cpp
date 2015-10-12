@@ -1834,8 +1834,8 @@ HRESULT UpdateInputState( HWND hDlg )
 		if (GetTextMetrics(hDC, &tm) == 0)
 			tm.tmHeight = 13;			// wild guess
 		BorderY = tm.tmHeight;			// Just enough room to write labels outside the border.
-		//BorderX = tm.tmHeight;			// X border is the same size as the Y border.
-		BorderX = 4;					// Fixed width narrow border.
+		BorderX = tm.tmHeight;			// X border is the same size as the Y border.
+		//BorderX = 4;					// Fixed width narrow border.
 	}
 
 	// Use system font for all output text.
