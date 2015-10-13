@@ -100,14 +100,34 @@ static struct {
 // Desc: Entry point for the application.  Since we use a simple dialog for 
 //       user interaction we don't need to pump messages.
 //-----------------------------------------------------------------------------
-int APIENTRY WinMain( HINSTANCE hInst, HINSTANCE, LPSTR, int )
+int APIENTRY WinMain( HINSTANCE hInst, HINSTANCE, LPSTR, int nCmdShow)
 {
     InitCommonControls();
 
     // Display the main dialog box.
 	g_hInst = hInst; // needed to create config dialog.
+	
+#if 1
 	DialogBox( hInst, MAKEINTRESOURCE(IDD_JOYST_IMM), NULL, MainDlgProc );
-    
+#else    
+	HWND hDlg;
+	MSG msg;
+	BOOL ret;
+
+	hDlg = CreateDialogParam(hInst, MAKEINTRESOURCE(IDD_JOYST_IMM), 0, MainDlgProc, 0);
+	ShowWindow(hDlg, nCmdShow);
+
+	while((ret = GetMessage(&msg, 0, 0, 0)) != 0) {
+		if(ret == -1)
+			return -1;
+
+		if(!IsDialogMessage(hDlg, &msg)) {
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+	}
+#endif
+
     return TRUE;
 }
 
@@ -949,9 +969,9 @@ INT_PTR CALLBACK MainDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam 
 				!g_pJoystick || g_pJoystick->Acquire() != S_OK )
 			{ 
 				MessageBeep(MB_ICONEXCLAMATION); 
-				MessageBox(hDlg, "Couldn't initialize the joystick.", NULL, MB_OK | MB_ICONEXCLAMATION);
-////				// Just continue....they have been warned, but can at least see the screen.
-// 				PostMessage(hDlg,WM_CLOSE,0,0L); 
+				MessageBox(hDlg, "Couldn't initialize the joystick.", Title, MB_OK | MB_ICONEXCLAMATION);
+				// Just continue....they have been warned, but can at least see the screen.
+ 				//PostMessage(hDlg,WM_CLOSE,0,0L); 
 		    } 
 
 			if ( g_Config.RememberWindow &&
@@ -1004,7 +1024,7 @@ INT_PTR CALLBACK MainDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam 
 					break;
 
 				case ID_EDIT_CONFIG:
-					CreateDialog( g_hInst, MAKEINTRESOURCE(IDD_CONFIG), hDlg, ConfigDlgProc );
+					DialogBox( g_hInst, MAKEINTRESOURCE(IDD_CONFIG), hDlg, ConfigDlgProc );
 					break;
 
 				default:
@@ -1292,7 +1312,7 @@ INT_PTR CALLBACK ConfigDlgProc( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lPara
             switch( LOWORD(wParam) )
             {
                 case IDC_CONFIG_ABOUT:
-					CreateDialog( g_hInst, MAKEINTRESOURCE(IDD_ABOUT), hDlg, ConfigAboutProc );
+					DialogBox( g_hInst, MAKEINTRESOURCE(IDD_ABOUT), hDlg, ConfigAboutProc );
 					break;
 
 				case IDC_CONFIG_CANCEL:
