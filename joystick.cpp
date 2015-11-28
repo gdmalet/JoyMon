@@ -95,6 +95,12 @@ static struct {
 		LabelTopLeft[128], LabelTopRight[128], LabelBottomLeft[128], LabelBottomRight[128];
 } g_Config;
 
+/* The following is for a one-off change for the Brookline Trauma Center.
+ * Draw 4 horizontal lines across the screen, spaced as follows (each is a
+ * percentage of the screen height, measured from the bottom). */
+static const unsigned int Brookline4[4] = { 25, 37, 63, 75 };
+static const bool doBrookline = true;
+
 //-----------------------------------------------------------------------------
 // Name: WinMain()
 // Desc: Entry point for the application.  Since we use a simple dialog for 
@@ -1891,7 +1897,7 @@ HRESULT UpdateInputState( HWND hDlg )
 	SetTextColor( hDC, RGB(0x00,0x00,0x00) );
 	SetBkColor( hDC, RGB(0xff,0xff,0xff) );
 
-	if ( g_Config.LabelNegX[0] != 0 ) {
+	if ( g_Config.LabelNegX[0] != 0 && !doBrookline) {
 		if (!g_Config.OriginLowerLeft) {
 			SetTextAlign( hDC, TA_TOP | TA_LEFT );
 			TextOut( hDC, BorderX+2,y+2, g_Config.LabelNegX, strlen(g_Config.LabelNegX) );
@@ -1944,9 +1950,15 @@ HRESULT UpdateInputState( HWND hDlg )
 		TextOut( hDC, xsize - BorderX - 2,y+2, g_Config.LabelPosX, strlen(g_Config.LabelPosX) );
 	}
 	if ( g_Config.LabelNegY[0] != 0 ) {	// axis is flipped
-		SetTextAlign( hDC, TA_BOTTOM | TA_CENTER );
 		if (!g_Config.OriginLowerLeft) {	// label goes inside the axis, else below
-			TextOut( hDC, x+2, ysize - 2, g_Config.LabelNegY, strlen(g_Config.LabelNegY) );
+			if (doBrookline) {
+				SetTextAlign( hDC, TA_TOP | TA_RIGHT );
+				int ypos = (ysize - BorderY) - (ysize - 2*BorderY) * Brookline4[0]/2 / 100;
+				TextOut( hDC, xsize - BorderX - 2, ypos, g_Config.LabelNegY, strlen(g_Config.LabelNegY) );
+			} else {
+				SetTextAlign( hDC, TA_BOTTOM | TA_CENTER );
+				TextOut( hDC, x+2, ysize - 2, g_Config.LabelNegY, strlen(g_Config.LabelNegY) );
+			}
 		} else {
 			// Force the same font we used for the negative Y axis, else they're different...
 			HFONT NegYfont = CreateFont(
@@ -1980,8 +1992,14 @@ HRESULT UpdateInputState( HWND hDlg )
 		}
 	}
 	if ( g_Config.LabelPosY[0] != 0 ) {
-		SetTextAlign( hDC, TA_TOP | TA_CENTER );
-		TextOut( hDC, x-2, 2, g_Config.LabelPosY, strlen(g_Config.LabelPosY) );
+			if (doBrookline) {
+				SetTextAlign( hDC, TA_BOTTOM | TA_RIGHT );
+				int ypos = BorderY + (ysize - 2*BorderY) * (100-Brookline4[3])/2 / 100;
+				TextOut( hDC, xsize - BorderX - 2, ypos, g_Config.LabelPosY, strlen(g_Config.LabelPosY) );
+			} else {
+				SetTextAlign( hDC, TA_TOP | TA_CENTER );
+				TextOut( hDC, x-2, 2, g_Config.LabelPosY, strlen(g_Config.LabelPosY) );
+			}
 	}
 
 	// Need to measure string output sizes to avoid truncation at the edge of the screen
@@ -1995,20 +2013,32 @@ HRESULT UpdateInputState( HWND hDlg )
 		TextOut( hDC, x/2 + offset,y/2, g_Config.LabelTopLeft, strlen(g_Config.LabelTopLeft) );
 	}
 	if ( g_Config.LabelTopRight[0] != 0 ) {
-		RECT r = { 0, 0, 0, 0 };
-		DrawText(hDC, g_Config.LabelTopRight, strlen(g_Config.LabelTopRight), &r, DT_CALCRECT);
-		int offset = r.right - x/2 + BorderX;
-		if (offset<0) offset = 0;
-		SetTextAlign( hDC, TA_BOTTOM | TA_LEFT );
-		TextOut( hDC, x+x-x/2 - offset,y/2, g_Config.LabelTopRight, strlen(g_Config.LabelTopRight) );
+		if (doBrookline) {
+			SetTextAlign( hDC, TA_BOTTOM | TA_RIGHT );
+			int ypos = BorderY + (ysize - 2*BorderY) * (100-(Brookline4[2]+Brookline4[3])/2) / 100;
+			TextOut( hDC, xsize - BorderX - 2, ypos+8, g_Config.LabelTopRight, strlen(g_Config.LabelTopRight) );
+		} else {
+			RECT r = { 0, 0, 0, 0 };
+			DrawText(hDC, g_Config.LabelTopRight, strlen(g_Config.LabelTopRight), &r, DT_CALCRECT);
+			int offset = r.right - x/2 + BorderX;
+			if (offset<0) offset = 0;
+			SetTextAlign( hDC, TA_BOTTOM | TA_LEFT );
+			TextOut( hDC, x+x-x/2 - offset,y/2, g_Config.LabelTopRight, strlen(g_Config.LabelTopRight) );
+		}
 	}
 	if ( g_Config.LabelBottomRight[0] != 0 ) {
-		RECT r = { 0, 0, 0, 0 };
-		DrawText(hDC, g_Config.LabelBottomRight, strlen(g_Config.LabelBottomRight), &r, DT_CALCRECT);
-		int offset = r.right - x/2 + BorderX;
-		if (offset<0) offset = 0;
-		SetTextAlign( hDC, TA_TOP | TA_LEFT );
-		TextOut( hDC, x+x-x/2 - offset,y+y-y/2, g_Config.LabelBottomRight, strlen(g_Config.LabelBottomRight) );
+		if (doBrookline) {
+			SetTextAlign( hDC, TA_TOP | TA_RIGHT );
+			int ypos = BorderY + (ysize - 2*BorderY) * (100-(Brookline4[0]+Brookline4[1])/2) / 100;
+			TextOut( hDC, xsize - BorderX - 2, ypos-8, g_Config.LabelBottomRight, strlen(g_Config.LabelBottomRight) );
+		} else {
+			RECT r = { 0, 0, 0, 0 };
+			DrawText(hDC, g_Config.LabelBottomRight, strlen(g_Config.LabelBottomRight), &r, DT_CALCRECT);
+			int offset = r.right - x/2 + BorderX;
+			if (offset<0) offset = 0;
+			SetTextAlign( hDC, TA_TOP | TA_LEFT );
+			TextOut( hDC, x+x-x/2 - offset,y+y-y/2, g_Config.LabelBottomRight, strlen(g_Config.LabelBottomRight) );
+		}
 	}
 	if ( g_Config.LabelBottomLeft[0] != 0 ) {
 		RECT r = { 0, 0, 0, 0 };
@@ -2028,12 +2058,21 @@ HRESULT UpdateInputState( HWND hDlg )
 	SelectBrush( hDC, GetStockBrush(WHITE_BRUSH) );
 	Ellipse( hDC, oldx-radius, oldy-radius, oldx+radius, oldy+radius );
 	
+	// Draw 4 horizontal lines for Brookline Trauma Center
+	if ( doBrookline ) {
+		SelectPen( hDC, GetStockPen(BLACK_PEN) );
+		for (int i = 0; i <= sizeof Brookline4; i++) {
+			int ypos = (ysize - BorderY) - (ysize - 2*BorderY) * Brookline4[i] / 100;
+			MoveToEx( hDC, BorderX, ypos, NULL );
+			LineTo(   hDC, xsize - BorderX, ypos);
+		}
+	}
+
 	// Draw a grid
 	if (g_Config.GridCount > 0) {
 	    SelectPen(hDC, CreatePen(PS_DOT, 0, RGB(0xA0,0xA0,0xA0)));
 		//printf("grid: xsize, ysize = %i,%i, x,y = %i,%i\n", xsize, ysize, x,y);
 		for (int i = 0; i <= g_Config.GridCount; i++) {
-			//int xpos = Border + stepx*i, ypos = Border + stepy*i;
 			int xpos = BorderX + (xsize - 2*BorderX) * i / g_Config.GridCount;
 			int ypos = BorderY + (ysize - 2*BorderY) * i / g_Config.GridCount;
 			if (abs(xpos-x) == 1)
@@ -2042,10 +2081,8 @@ HRESULT UpdateInputState( HWND hDlg )
 				ypos = y;
 			MoveToEx( hDC, BorderX, ypos, NULL );
 			LineTo(   hDC, xsize - BorderX, ypos);
-			//printf("grid: %4i,%4i -> %4i,%4i    ", Border, ypos, xsize - Border, ypos);
 			MoveToEx( hDC, xpos, BorderY, NULL );
 			LineTo(   hDC, xpos, ysize - BorderY);
-			//printf("grid: %4i,%4i -> %4i,%4i\n", xpos, Border, xpos, ysize - Border);
 		}
 	}
 
@@ -2112,8 +2149,10 @@ HRESULT UpdateInputState( HWND hDlg )
 
 	} else {	// Standard X,Y axes, centred on screen
 		if (!g_Config.SuppressY) {
-			MoveToEx( hDC, x, BorderY, NULL );
-			LineTo(   hDC, x, ysize - BorderY );
+			if (!doBrookline) {
+				MoveToEx( hDC, x, BorderY, NULL );
+				LineTo(   hDC, x, ysize - BorderY );
+			}
 		} else {
 			MoveToEx( hDC, x, y-radius-3, NULL );				// make a teeny bit bigger than the 
 			LineTo(   hDC, x, y+radius+3);						// ellipse cursor.
